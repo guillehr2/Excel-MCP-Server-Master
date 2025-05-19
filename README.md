@@ -457,4 +457,4 @@ MCP Excel Suite is optimized for efficient performance, but keep in mind the fol
 </p>
 
 <!-- Keywords for SEO -->
-<!-- model context protocol, mcp, excel automation, ai excel, llm tools, excel api, natural language excel, claude excel, gpt excel, data analysis, excel mcp, anthropic tools, excel automation, python excel, dbhub, database integration -->
+<!-- model context protocol, mcp, excel automation, ai excel, llm tools, excel api, natural language excel, claude excel, gpt excel, data analysis, excel mcp, anthropic tools, excel automation, python excel, dbhub, database integration, MCP servers, Excel MCP, Excel MCP server, claude MCP, Excel Claude MCP, MCP, Claude, anthropic, excel server, python server -->
