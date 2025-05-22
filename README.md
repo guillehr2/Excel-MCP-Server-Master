@@ -1,5 +1,10 @@
 # Excel MCP Master Server 📊
 
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://claude.ai)
+
 A unified and comprehensive Model Context Protocol (MCP) server for complete Excel file manipulation. This single server provides all the functionality needed for reading, writing, formatting, and analyzing Excel files through LLM interactions.
 
 ![Excel MCP Master](./assets/banner.svg)
