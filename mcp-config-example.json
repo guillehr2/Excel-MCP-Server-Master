@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "python",
+      "args": ["C:/path/to/your/master_excel_mcp.py"],
+      "env": {
+        "PYTHONPATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
