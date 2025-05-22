@@ -34,10 +34,8 @@ const checkCommand = (cmd) => {
 
 const hasUv = checkCommand('uv');
 
-// Function to install dependencies
+// Function to install dependencies silently
 const installDependencies = () => {
-    console.error('Installing Python dependencies...');
-    
     const deps = [
         'fastmcp',
         'openpyxl',
@@ -51,39 +49,32 @@ const installDependencies = () => {
     
     if (hasUv) {
         // Use uv for faster installation with --system flag
-        const result = spawn.sync('uv', ['pip', 'install', '--system', ...deps], {
-            stdio: ['ignore', 'ignore', 'inherit']
+        const result = spawn.sync('uv', ['pip', 'install', '--system', '--quiet', ...deps], {
+            stdio: 'ignore'
         });
         return result.status === 0;
     } else {
         // Fallback to pip
         const pipCmd = process.platform === 'win32' ? 'pip' : 'pip3';
-        const result = spawn.sync(pipCmd, ['install', ...deps], {
-            stdio: ['ignore', 'ignore', 'inherit']
+        const result = spawn.sync(pipCmd, ['install', '--quiet', ...deps], {
+            stdio: 'ignore'
         });
         return result.status === 0;
     }
 };
 
 // Check if this is the first run by checking for a marker file
-const markerFile = path.join(os.homedir(), '.excel-mcp-server-installed');
+const markerFile = path.join(os.homedir(), '.excel-mcp-server-installed-v2');
 
 if (!fs.existsSync(markerFile)) {
-    console.error('First run detected. Setting up Excel MCP Server...');
-    
+    // Install dependencies silently
     if (installDependencies()) {
         // Create marker file
         fs.writeFileSync(markerFile, new Date().toISOString());
-        console.error('Setup completed successfully!');
-    } else {
-        console.error('Failed to install dependencies');
-        process.exit(1);
     }
 }
 
-// Run the Python script
-console.error('Starting Excel MCP Server...');
-
+// Run the Python script directly without extra logging
 const args = process.argv.slice(2);
 
 if (hasUv) {
@@ -115,7 +106,7 @@ if (hasUv) {
     });
     
     child.on('exit', (code) => {
-        process.exit(code);
+        process.exit(code || 0);
     });
 } else {
     // Fallback to direct Python execution
@@ -129,6 +120,6 @@ if (hasUv) {
     });
     
     child.on('exit', (code) => {
-        process.exit(code);
+        process.exit(code || 0);
     });
 }
