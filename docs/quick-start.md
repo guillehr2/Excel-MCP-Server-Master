@@ -61,7 +61,25 @@ Add the following to your Claude Desktop configuration file:
       "command": "npx",
       "args": [
         "-y",
-        "@guillehr2/excel-mcp-server"
+        "@guillehr2/excel-mcp-server@latest"
+      ]
+    }
+  }
+}
+```
+
+#### Using Specific Version
+
+For stability, you can pin to a specific version:
+
+```json
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@guillehr2/excel-mcp-server@1.0.3"
       ]
     }
   }
@@ -282,6 +300,16 @@ On first run, the server automatically installs required Python packages. If thi
 - Unix/macOS: Check file permissions
 - Ensure write access to the directory
 
+#### NPX Cache Issues
+If npx is using an old version:
+```bash
+# Clear npx cache
+rmdir /s /q %LOCALAPPDATA%\npm-cache\_npx
+
+# Use specific version
+npx @guillehr2/excel-mcp-server@1.0.3
+```
+
 ### Debug Mode
 
 Enable debug logging for more information:
@@ -310,6 +338,7 @@ npx @guillehr2/excel-mcp-server
 - [Examples](examples.md)
 - [Troubleshooting Guide](troubleshooting.md)
 - [GitHub Repository](https://github.com/guillehr2/Excel-MCP-Server-Master)
+- [NPM Package](https://www.npmjs.com/package/@guillehr2/excel-mcp-server)
 
 ---
 

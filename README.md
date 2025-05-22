@@ -52,7 +52,7 @@ A unified and comprehensive Model Context Protocol (MCP) server for complete Exc
 The easiest way to use Excel MCP Server is with `npx` (no installation required):
 
 ```bash
-npx @guillehr2/excel-mcp-server
+npx @guillehr2/excel-mcp-server@latest
 ```
 
 Or install globally:
@@ -74,7 +74,23 @@ Add to your MCP client configuration (e.g., Claude Desktop):
       "command": "npx",
       "args": [
         "-y",
-        "@guillehr2/excel-mcp-server"
+        "@guillehr2/excel-mcp-server@latest"
+      ]
+    }
+  }
+}
+```
+
+#### Using specific version
+
+```json
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@guillehr2/excel-mcp-server@1.0.3"
       ]
     }
   }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "excel-mcp-server"
-version = "1.0.0"
+version = "1.0.3"
 description = "A comprehensive Model Context Protocol (MCP) server for Excel file manipulation"
 readme = "README.md"
 license = {file = "LICENSE"}

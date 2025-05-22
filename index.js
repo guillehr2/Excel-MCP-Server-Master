@@ -64,7 +64,7 @@ const installDependencies = () => {
 };
 
 // Check if this is the first run by checking for a marker file
-const markerFile = path.join(os.homedir(), '.excel-mcp-server-installed-v2');
+const markerFile = path.join(os.homedir(), '.excel-mcp-server-installed-v3');
 
 if (!fs.existsSync(markerFile)) {
     // Install dependencies silently
@@ -78,10 +78,9 @@ if (!fs.existsSync(markerFile)) {
 const args = process.argv.slice(2);
 
 if (hasUv) {
-    // Use uv run for better dependency management with --system flag
+    // Use uv run for better dependency management (without --system flag)
     const uvArgs = [
         'run',
-        '--system',
         '--with', 'matplotlib',
         '--with', 'mcp[cli]',
         '--with', 'numpy',

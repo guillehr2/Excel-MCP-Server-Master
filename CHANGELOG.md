@@ -5,7 +5,27 @@ All notable changes to the Excel MCP Server will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2025-01-01
+## [1.0.3] - 2025-01-22
+
+### Fixed
+- Removed `--system` flag from `uv run` command (only kept for `uv pip install`)
+- Fixed compatibility issues with `uv` dependency manager
+
+## [1.0.2] - 2025-01-22
+
+### Fixed
+- Removed all console output that was interfering with MCP protocol
+- Made dependency installation completely silent
+- Changed output to stderr instead of stdout for better MCP compatibility
+- Updated marker file to force reinstallation
+
+## [1.0.1] - 2025-01-22
+
+### Fixed
+- Added `--system` flag to `uv` commands for proper system-wide installation
+- Improved error handling for dependency installation
+
+## [1.0.0] - 2025-01-22
 
 ### Added
 - Initial release of Excel MCP Master Server

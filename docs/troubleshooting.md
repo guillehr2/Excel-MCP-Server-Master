@@ -19,18 +19,23 @@ This guide helps you resolve common issues when using the Excel MCP Server.
 
 **Solutions**:
 
-1. **Clear npm cache**:
+1. **Use specific version**:
+   ```bash
+   npx @guillehr2/excel-mcp-server@1.0.3
+   ```
+
+2. **Clear npm cache**:
    ```bash
    npm cache clean --force
    ```
 
-2. **Check Node.js version**:
+3. **Check Node.js version**:
    ```bash
    node --version
    ```
    Ensure you have Node.js 14.0 or higher.
 
-3. **Try global installation**:
+4. **Try global installation**:
    ```bash
    npm install -g @guillehr2/excel-mcp-server
    excel-mcp-server

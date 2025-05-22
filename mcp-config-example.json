@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@guillehr2/excel-mcp-server"
+        "@guillehr2/excel-mcp-server@latest"
       ]
     }
   }
@@ -12,7 +12,20 @@
 
 // Alternative configurations:
 
-// 1. Global installation
+// 1. Using specific version (recommended for production)
+// {
+//   "mcpServers": {
+//     "excel-master": {
+//       "command": "npx",
+//       "args": [
+//         "-y",
+//         "@guillehr2/excel-mcp-server@1.0.3"
+//       ]
+//     }
+//   }
+// }
+
+// 2. Global installation
 // {
 //   "mcpServers": {
 //     "excel-master": {
@@ -21,7 +34,7 @@
 //   }
 // }
 
-// 2. Development mode (from source)
+// 3. Development mode (from source)
 // {
 //   "mcpServers": {
 //     "excel-master": {
@@ -31,7 +44,7 @@
 //   }
 // }
 
-// 3. Python direct execution (advanced)
+// 4. Python direct execution (advanced)
 // {
 //   "mcpServers": {
 //     "excel-master": {
@@ -41,7 +54,7 @@
 //   }
 // }
 
-// 4. Using uv (if you have uv installed)
+// 5. Using uv (if you have uv installed)
 // {
 //   "mcpServers": {
 //     "excel-master": {

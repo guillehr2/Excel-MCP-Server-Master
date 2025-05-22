@@ -16,7 +16,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="excel-mcp-server",
-    version="1.0.0",
+    version="1.0.3",
     author="Guillem Hermida",
     author_email="qtmsuite@gmail.com",
     description="A comprehensive Model Context Protocol (MCP) server for Excel file manipulation",
