@@ -3,7 +3,6 @@
 A unified and comprehensive Model Context Protocol (MCP) server for complete Excel file manipulation. This single server provides all the functionality needed for reading, writing, formatting, and analyzing Excel files through LLM interactions.
 
 ![Excel MCP Master](./assets/banner.svg)
-<img src="./assets/banner.svg">
 
 ## 🌟 Features
 
