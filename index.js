@@ -36,7 +36,7 @@ const hasUv = checkCommand('uv');
 
 // Function to install dependencies
 const installDependencies = () => {
-    console.log('Installing Python dependencies...');
+    console.error('Installing Python dependencies...');
     
     const deps = [
         'fastmcp',
@@ -50,16 +50,16 @@ const installDependencies = () => {
     ];
     
     if (hasUv) {
-        // Use uv for faster installation
-        const result = spawn.sync('uv', ['pip', 'install', ...deps], {
-            stdio: 'inherit'
+        // Use uv for faster installation with --system flag
+        const result = spawn.sync('uv', ['pip', 'install', '--system', ...deps], {
+            stdio: ['ignore', 'ignore', 'inherit']
         });
         return result.status === 0;
     } else {
         // Fallback to pip
         const pipCmd = process.platform === 'win32' ? 'pip' : 'pip3';
         const result = spawn.sync(pipCmd, ['install', ...deps], {
-            stdio: 'inherit'
+            stdio: ['ignore', 'ignore', 'inherit']
         });
         return result.status === 0;
     }
@@ -69,12 +69,12 @@ const installDependencies = () => {
 const markerFile = path.join(os.homedir(), '.excel-mcp-server-installed');
 
 if (!fs.existsSync(markerFile)) {
-    console.log('First run detected. Setting up Excel MCP Server...');
+    console.error('First run detected. Setting up Excel MCP Server...');
     
     if (installDependencies()) {
         // Create marker file
         fs.writeFileSync(markerFile, new Date().toISOString());
-        console.log('Setup completed successfully!');
+        console.error('Setup completed successfully!');
     } else {
         console.error('Failed to install dependencies');
         process.exit(1);
@@ -82,14 +82,15 @@ if (!fs.existsSync(markerFile)) {
 }
 
 // Run the Python script
-console.log('Starting Excel MCP Server...');
+console.error('Starting Excel MCP Server...');
 
 const args = process.argv.slice(2);
 
 if (hasUv) {
-    // Use uv run for better dependency management
+    // Use uv run for better dependency management with --system flag
     const uvArgs = [
         'run',
+        '--system',
         '--with', 'matplotlib',
         '--with', 'mcp[cli]',
         '--with', 'numpy',
