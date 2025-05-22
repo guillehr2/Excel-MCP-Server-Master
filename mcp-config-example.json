@@ -1,11 +1,65 @@
 {
   "mcpServers": {
     "excel-master": {
-      "command": "python",
-      "args": ["C:/path/to/your/master_excel_mcp.py"],
-      "env": {
-        "PYTHONPATH": "C:/path/to/your/project"
-      }
+      "command": "npx",
+      "args": [
+        "-y",
+        "@guillehr2/excel-mcp-server"
+      ]
     }
   }
 }
+
+// Alternative configurations:
+
+// 1. Global installation
+// {
+//   "mcpServers": {
+//     "excel-master": {
+//       "command": "excel-mcp-server"
+//     }
+//   }
+// }
+
+// 2. Development mode (from source)
+// {
+//   "mcpServers": {
+//     "excel-master": {
+//       "command": "node",
+//       "args": ["C:/path/to/Excel-MCP-Server-Master/index.js"]
+//     }
+//   }
+// }
+
+// 3. Python direct execution (advanced)
+// {
+//   "mcpServers": {
+//     "excel-master": {
+//       "command": "python",
+//       "args": ["C:/path/to/master_excel_mcp.py"]
+//     }
+//   }
+// }
+
+// 4. Using uv (if you have uv installed)
+// {
+//   "mcpServers": {
+//     "excel-master": {
+//       "command": "uv",
+//       "args": [
+//         "run",
+//         "--with", "matplotlib",
+//         "--with", "mcp[cli]",
+//         "--with", "numpy",
+//         "--with", "openpyxl",
+//         "--with", "pandas",
+//         "--with", "xlsxwriter",
+//         "--with", "xlrd",
+//         "--with", "xlwt",
+//         "mcp",
+//         "run",
+//         "C:/path/to/master_excel_mcp.py"
+//       ]
+//     }
+//   }
+// }

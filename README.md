@@ -1,8 +1,11 @@
 # Excel MCP Master Server 📊
 
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![npm version](https://img.shields.io/npm/v/@guillehr2/excel-mcp-server.svg)](https://www.npmjs.com/package/@guillehr2/excel-mcp-server)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/npm/dm/@guillehr2/excel-mcp-server.svg)](https://www.npmjs.com/package/@guillehr2/excel-mcp-server)
+[![GitHub Stars](https://img.shields.io/github/stars/guillehr2/Excel-MCP-Server-Master.svg)](https://github.com/guillehr2/Excel-MCP-Server-Master/stargazers)
 [![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://claude.ai)
 
 A unified and comprehensive Model Context Protocol (MCP) server for complete Excel file manipulation. This single server provides all the functionality needed for reading, writing, formatting, and analyzing Excel files through LLM interactions.
@@ -46,27 +49,60 @@ A unified and comprehensive Model Context Protocol (MCP) server for complete Exc
 
 ### Installation
 
-1. **Clone the repository:**
+The easiest way to use Excel MCP Server is with `npx` (no installation required):
+
 ```bash
-git clone https://github.com/yourusername/MCP_Server_Excel_Suite.git
-cd MCP_Server_Excel_Suite
+npx @guillehr2/excel-mcp-server
 ```
 
-2. **Install dependencies:**
+Or install globally:
+
 ```bash
-pip install fastmcp openpyxl pandas numpy
+npm install -g @guillehr2/excel-mcp-server
 ```
 
 ### Configuration
 
 Add to your MCP client configuration (e.g., Claude Desktop):
 
+#### Using npx (Recommended)
+
 ```json
 {
   "mcpServers": {
     "excel-master": {
-      "command": "python",
-      "args": ["C:/path/to/master_excel_mcp.py"]
+      "command": "npx",
+      "args": [
+        "-y",
+        "@guillehr2/excel-mcp-server"
+      ]
+    }
+  }
+}
+```
+
+#### Using global installation
+
+```json
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "excel-mcp-server"
+    }
+  }
+}
+```
+
+#### Development mode
+
+If you're developing or want to run from source:
+
+```json
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "node",
+      "args": ["path/to/Excel-MCP-Server-Master/index.js"]
     }
   }
 }
@@ -250,16 +286,58 @@ Create reports from templates:
 - **Automatic chart updates**
 - **Format preservation**
 
+## 📋 Requirements
+
+- Node.js 14.0 or higher
+- Python 3.8 or higher
+- Operating System: Windows, macOS, or Linux
+
+Python dependencies are automatically installed on first run:
+- fastmcp
+- openpyxl
+- pandas
+- numpy
+- matplotlib
+- xlsxwriter
+- xlrd
+- xlwt
+
 ## 📚 Documentation
 
 For detailed documentation, see:
 - [📖 Quick Start Guide](docs/quick-start.md)
 - [🔧 API Reference](docs/api-reference.md)
 - [💡 Examples](docs/examples.md)
+- [📝 Changelog](CHANGELOG.md)
 
 ## 🤝 Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/guillehr2/Excel-MCP-Server-Master.git
+cd Excel-MCP-Server-Master
+
+# Install dependencies
+npm install
+pip install -r requirements.txt
+
+# Run in development mode
+node index.js
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Python not found**: Ensure Python 3.8+ is installed and in your PATH
+2. **Dependencies fail to install**: Try running with administrator privileges
+3. **MCP client doesn't recognize the server**: Restart your MCP client after configuration
+
+For more help, see our [troubleshooting guide](docs/troubleshooting.md) or open an issue.
 
 ## 📄 License
 
@@ -270,7 +348,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [FastMCP](https://github.com/jlowin/fastmcp)
 - Excel manipulation powered by [openpyxl](https://openpyxl.readthedocs.io/)
 - Data processing with [pandas](https://pandas.pydata.org/)
+- Published on [npm](https://www.npmjs.com/) for easy distribution
+
+## 📊 Stats
+
+![GitHub last commit](https://img.shields.io/github/last-commit/guillehr2/Excel-MCP-Server-Master)
+![GitHub issues](https://img.shields.io/github/issues/guillehr2/Excel-MCP-Server-Master)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/guillehr2/Excel-MCP-Server-Master)
+![npm bundle size](https://img.shields.io/bundlephobia/min/@guillehr2/excel-mcp-server)
 
 ---
 
 **Made with ❤️ for the MCP ecosystem**
+
+*If you find this project useful, please consider giving it a ⭐ on GitHub!
+
+---
+
+**Created by Guillem Hermida** | [GitHub](https://github.com/guillehr2) | Contact: qtmsuite@gmail.com*

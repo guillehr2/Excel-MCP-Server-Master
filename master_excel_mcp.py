@@ -16,7 +16,7 @@ This module integrates:
 - advanced_excel_mcp.py: Tables, formulas, charts and pivot tables
 
 Author: MCP Team
-Version: 1.0
+Version: 2.1.8
 
 Usage guide for LLMs and agents
 -------------------------------

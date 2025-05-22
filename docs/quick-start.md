@@ -5,88 +5,108 @@ This guide will help you get started with the Excel MCP Master Server quickly an
 ## 📋 Prerequisites
 
 Before you begin, ensure you have:
+- Node.js 14.0 or higher
 - Python 3.8 or higher
-- Git (for cloning the repository)
 - A compatible MCP client (Claude Desktop, or other MCP-compatible applications)
 
 ## 🔧 Installation
 
-### Step 1: Clone the Repository
+### Recommended: Using NPX (No Installation Required)
+
+The easiest way to use the Excel MCP Server is directly with `npx`:
 
 ```bash
-git clone https://github.com/yourusername/MCP_Server_Excel_Suite.git
-cd MCP_Server_Excel_Suite
+# Test it works
+npx @guillehr2/excel-mcp-server --version
 ```
 
-### Step 2: Install Dependencies
+### Alternative: Global Installation
+
+Install globally for faster startup:
 
 ```bash
-pip install fastmcp openpyxl pandas numpy
+npm install -g @guillehr2/excel-mcp-server
+
+# Verify installation
+excel-mcp-server --version
 ```
 
-### Optional Dependencies (for advanced features)
+### Development Setup
+
+For development or customization:
 
 ```bash
-# For SQL data imports
-pip install pyodbc sqlalchemy
-
-# For additional data processing
-pip install xlsxwriter
-
-# For PDF export (Windows)
-pip install pywin32
+git clone https://github.com/guillehr2/Excel-MCP-Server-Master.git
+cd Excel-MCP-Server-Master
+npm install
+pip install -r requirements.txt
 ```
 
 ## ⚙️ Configuration
 
-### MCP Client Setup
-
-The Excel MCP Master Server uses a single unified server file: `master_excel_mcp.py`
-
-#### Claude Desktop Configuration
+### Claude Desktop Configuration
 
 Add the following to your Claude Desktop configuration file:
 
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+#### Using NPX (Recommended)
 
 ```json
 {
   "mcpServers": {
     "excel-master": {
-      "command": "python",
-      "args": ["C:/path/to/your/master_excel_mcp.py"],
-      "env": {
-        "PYTHONPATH": "C:/path/to/your/project"
-      }
+      "command": "npx",
+      "args": [
+        "-y",
+        "@guillehr2/excel-mcp-server"
+      ]
     }
   }
 }
 ```
 
-#### Alternative MCP Client Configuration
-
-For other MCP clients, use similar configuration adjusting the command format as needed:
+#### Using Global Installation
 
 ```json
 {
-  "servers": [
-    {
-      "name": "excel-master",
-      "command": ["python", "/path/to/master_excel_mcp.py"]
+  "mcpServers": {
+    "excel-master": {
+      "command": "excel-mcp-server"
     }
-  ]
+  }
 }
 ```
 
+#### Using Local Development
+
+```json
+{
+  "mcpServers": {
+    "excel-master": {
+      "command": "node",
+      "args": ["C:/path/to/Excel-MCP-Server-Master/index.js"]
+    }
+  }
+}
+```
+
+### Other MCP Clients
+
+For other MCP clients, adapt the configuration format as needed. The key components are:
+- **Command**: `npx` or `excel-mcp-server` or `node`
+- **Arguments**: Package name or script path
+
 ## 🏃‍♂️ First Steps
 
-### 1. Test the Connection
+### 1. Verify Installation
 
-After configuring your MCP client, restart it and verify that the Excel MCP Master Server is loaded:
+After configuring your MCP client:
 
-1. Open your MCP client
-2. Look for available tools starting with `excel_` or `create_`, `add_`, etc.
+1. Restart your MCP client completely
+2. Look for Excel-related tools in the available tools list
 3. You should see tools like:
    - `create_workbook_tool`
    - `write_sheet_data_tool`
@@ -95,7 +115,7 @@ After configuring your MCP client, restart it and verify that the Excel MCP Mast
 
 ### 2. Create Your First Excel File
 
-Try this simple example to create your first Excel file:
+Try this simple example:
 
 ```python
 # Create a new Excel workbook
@@ -116,6 +136,9 @@ write_sheet_data_tool(
         ["Product C", 8000, 1200]
     ]
 )
+
+# Save the file
+save_workbook_tool("my_first_excel.xlsx")
 ```
 
 ### 3. Create a Professional Table
@@ -129,24 +152,28 @@ create_formatted_table_tool(
     sheet_name="Sheet",
     start_cell="A1",
     data=[
-        ["Product", "Sales", "Profit"],
-        ["Product A", 10000, 2000],
-        ["Product B", 15000, 3500],
-        ["Product C", 8000, 1200]
+        ["Product", "Sales", "Profit", "Margin %"],
+        ["Product A", 10000, 2000, "=C2/B2"],
+        ["Product B", 15000, 3500, "=C3/B3"],
+        ["Product C", 8000, 1200, "=C4/B4"]
     ],
     table_name="SalesData",
     table_style="TableStyleMedium9",
     formats={
-        "B2:B4": "#,##0",  # Number format for sales
-        "C2:C4": "#,##0",  # Number format for profit
-        "A1:C1": {"bold": True, "fill_color": "4472C4"}  # Header styling
+        "B2:C4": "#,##0",          # Number format
+        "D2:D4": "0.0%",           # Percentage format
+        "A1:D1": {                 # Header styling
+            "bold": True,
+            "fill_color": "4472C4",
+            "font_color": "FFFFFF"
+        }
     }
 )
 ```
 
 ### 4. Add a Chart
 
-Visualize your data with a chart:
+Visualize your data:
 
 ```python
 # Add a column chart
@@ -156,42 +183,25 @@ add_chart_tool(
     chart_type="column",
     data_range="A1:B4",
     title="Sales by Product",
-    position="E2",
+    position="F2",
     style="colorful-1"
 )
 ```
 
-## 🎯 Common Use Cases
+## 🎯 Common Tasks
 
-### Creating Reports
-
-```python
-# Complete report creation in one step
-create_sheet_with_data_tool(
-    file_path="monthly_report.xlsx",
-    sheet_name="March Report",
-    data=[
-        ["Metric", "Value", "Target", "Variance"],
-        ["Revenue", 125000, 120000, 5000],
-        ["Costs", 89000, 95000, -6000],
-        ["Profit", 36000, 25000, 11000]
-    ],
-    overwrite=True
-)
-```
-
-### Building Dashboards
+### Creating a Dashboard
 
 ```python
-# Create a comprehensive dashboard
+# Create a dashboard with multiple visualizations
 create_dashboard_tool(
-    file_path="executive_dashboard.xlsx",
+    file_path="dashboard.xlsx",
     data={
         "KPIs": [
-            ["Metric", "Q1", "Q2", "Q3", "Q4"],
-            ["Revenue", 100000, 120000, 115000, 140000],
-            ["Customers", 1200, 1350, 1400, 1600],
-            ["Satisfaction", 4.2, 4.3, 4.1, 4.5]
+            ["Metric", "Value", "Target", "Status"],
+            ["Revenue", 125000, 120000, "Exceeded"],
+            ["Customers", 1543, 1500, "Exceeded"],
+            ["Satisfaction", 4.5, 4.0, "Exceeded"]
         ]
     },
     dashboard_config={
@@ -199,36 +209,35 @@ create_dashboard_tool(
             {
                 "sheet": "Dashboard",
                 "name": "KPITable",
-                "range": "KPIs!A1:E4",
+                "range": "KPIs!A1:D4",
                 "style": "TableStyleDark1"
             }
         ],
         "charts": [
             {
-                "sheet": "Dashboard", 
-                "type": "line",
-                "data_range": "KPIs!A1:E2",
-                "title": "Revenue Trend",
-                "position": "A6",
-                "style": "dark-blue"
+                "sheet": "Dashboard",
+                "type": "column",
+                "data_range": "KPIs!A1:B4",
+                "title": "Performance Metrics",
+                "position": "F2",
+                "style": "colorful-3"
             }
         ]
     }
 )
 ```
 
-### Importing External Data
+### Importing Data
 
 ```python
-# Import data from CSV
+# Import CSV data
 import_data_tool(
-    excel_file="analysis.xlsx",
+    excel_file="imported_data.xlsx",
     import_config={
         "csv": [
             {
                 "file_path": "sales_data.csv",
                 "sheet_name": "Sales",
-                "start_cell": "A1",
                 "encoding": "utf-8"
             }
         ]
@@ -239,54 +248,71 @@ import_data_tool(
 
 ## 🔍 Troubleshooting
 
+### Python Dependencies
+
+On first run, the server automatically installs required Python packages. If this fails:
+
+1. **Manual installation**:
+   ```bash
+   pip install fastmcp openpyxl pandas numpy matplotlib xlsxwriter xlrd xlwt
+   ```
+
+2. **Using virtual environment**:
+   ```bash
+   python -m venv venv
+   # Windows: venv\Scripts\activate
+   # Unix/macOS: source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
 ### Common Issues
 
-#### 1. Server Not Loading
-- Verify Python path is correct in configuration
-- Check that all dependencies are installed
-- Ensure the `master_excel_mcp.py` file path is correct
+#### Server Not Found
+- Ensure Node.js and npm are installed: `node --version`
+- Try clearing npm cache: `npm cache clean --force`
+- Install globally: `npm install -g @guillehr2/excel-mcp-server`
 
-#### 2. Permission Errors
-- Make sure you have write permissions to the target directory
-- Close any Excel files that might be open
-- Run your MCP client with appropriate permissions
+#### MCP Client Doesn't Recognize Server
+- Restart your MCP client completely
+- Check the configuration file syntax (valid JSON)
+- Verify the path in configuration matches your setup
 
-#### 3. Import Errors
-- Verify all required Python packages are installed:
-  ```bash
-  pip list | grep -E "(fastmcp|openpyxl|pandas|numpy)"
-  ```
+#### Permission Errors
+- Windows: Run terminal as Administrator
+- Unix/macOS: Check file permissions
+- Ensure write access to the directory
 
-#### 4. File Not Found Errors
-- Use absolute paths for file operations
-- Ensure target directories exist
-- Check file extensions (.xlsx, .csv, etc.)
+### Debug Mode
 
-### Getting Help
+Enable debug logging for more information:
 
-If you encounter issues:
+```bash
+# Windows
+set EXCEL_MCP_DEBUG=true
+npx @guillehr2/excel-mcp-server
 
-1. Check the [main documentation](../README.md)
-2. Look at the error messages in your MCP client's logs
-3. Verify your configuration matches the examples above
-4. Try with a simple example first before complex operations
+# Unix/macOS
+export EXCEL_MCP_DEBUG=true
+npx @guillehr2/excel-mcp-server
+```
 
 ## 🎓 Next Steps
 
-Once you have the basic setup working:
+1. **Explore Examples**: Check out the [examples collection](examples.md)
+2. **API Reference**: Learn about all available tools in the [API reference](api-reference.md)
+3. **Advanced Features**: Try creating dashboards and complex reports
+4. **Customize**: Modify the server for your specific needs
 
-1. **Explore Advanced Features**: Try creating dashboards, importing data from multiple sources
-2. **Learn Template Usage**: Use `create_report_from_template_tool` for consistent reporting
-3. **Automate Workflows**: Combine multiple tools for complex data processing
-4. **Customize Styling**: Experiment with different chart styles and table formats
+## 📚 Resources
 
-## 📚 Additional Resources
-
-- [Full API Reference](api-reference.md)
-- [Examples Collection](examples.md)
+- [Full Documentation](../README.md)
+- [API Reference](api-reference.md)
+- [Examples](examples.md)
 - [Troubleshooting Guide](troubleshooting.md)
-- [Advanced Configuration](advanced-config.md)
+- [GitHub Repository](https://github.com/guillehr2/Excel-MCP-Server-Master)
 
 ---
 
-**Ready to create amazing Excel reports! 🎉**
+**You're now ready to create amazing Excel reports with AI! 🎉**
+
+If you encounter any issues, please check the [troubleshooting guide](troubleshooting.md) or open an issue on GitHub.

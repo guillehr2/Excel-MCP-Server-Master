@@ -1,0 +1,12 @@
+include README.md
+include LICENSE
+include LICENSE.md
+include CHANGELOG.md
+include requirements.txt
+include package.json
+include index.js
+recursive-include docs *.md
+recursive-include assets *.svg
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store

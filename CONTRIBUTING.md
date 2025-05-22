@@ -37,8 +37,8 @@ Thank you for your interest in contributing to the Excel MCP Master Server! This
 
 1. **Fork and clone the repository:**
 ```bash
-git clone https://github.com/yourusername/MCP_Server_Excel_Suite.git
-cd MCP_Server_Excel_Suite
+git clone https://github.com/guillehr2/Excel-MCP-Server-Master.git
+cd Excel-MCP-Server-Master
 ```
 
 2. **Create a virtual environment:**

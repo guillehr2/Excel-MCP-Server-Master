@@ -1,0 +1,47 @@
+{
+  "name": "@guillehr2/excel-mcp-server",
+  "version": "1.0.0",
+  "description": "A comprehensive Model Context Protocol (MCP) server for Excel file manipulation with AI/LLM integration",
+  "main": "index.js",
+  "bin": {
+    "excel-mcp-server": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "excel",
+    "openpyxl",
+    "ai",
+    "llm",
+    "claude",
+    "automation",
+    "spreadsheet"
+  ],
+  "author": "Guillem Hermida",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guillehr2/Excel-MCP-Server-Master.git"
+  },
+  "bugs": {
+    "url": "https://github.com/guillehr2/Excel-MCP-Server-Master/issues"
+  },
+  "homepage": "https://github.com/guillehr2/Excel-MCP-Server-Master#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.3"
+  },
+  "files": [
+    "index.js",
+    "master_excel_mcp.py",
+    "requirements.txt",
+    "README.md",
+    "LICENSE"
+  ]
+}
