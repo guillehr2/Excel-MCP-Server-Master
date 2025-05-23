@@ -1,6 +1,6 @@
 {
   "name": "@guillehr2/excel-mcp-server",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "A comprehensive Model Context Protocol (MCP) server for Excel file manipulation with AI/LLM integration",
   "main": "index.js",
   "bin": {

@@ -3,40 +3,43 @@
 
 """
 Excel MCP Master (Model Context Protocol for Excel)
---------------------------------------------------
-Unified library to manipulate Excel files with advanced features:
-- Combines all Excel MCP modules under a single interface
-- Provides high level functions for common operations
-- Optimizes the workflow when working with Excel
+-------------------------------------------------------
+Biblioteca unificada para manipular archivos Excel con funcionalidades avanzadas:
+- Combina todos los módulos Excel MCP en una interfaz unificada
+- Proporciona funciones de alto nivel para operaciones comunes
+- Optimiza el flujo de trabajo con Excel
 
-This module integrates:
-- excel_mcp_complete.py: Data reading and exploration
-- workbook_manager_mcp.py: Workbook and sheet management
-- excel_writer_mcp.py: Cell writing and formatting
-- advanced_excel_mcp.py: Tables, formulas, charts and pivot tables
+Este módulo integra:
+- excel_mcp_complete.py: Lectura y exploración de datos
+- workbook_manager_mcp.py: Gestión de libros y hojas
+- excel_writer_mcp.py: Escritura y formato de celdas
+- advanced_excel_mcp.py: Tablas, fórmulas, gráficos y tablas dinámicas
 
 Author: MCP Team
-Version: 2.1.8
+Version: 1.0
 
-Usage guide for LLMs and agents
--------------------------------
-All functions of this library are designed to be used by language models or
-automatic tools that generate Excel files. To obtain the best results, follow
-these context recommendations for each operation:
+Guía de uso para LLM y agentes
+------------------------------
+Todas las funciones de esta biblioteca están pensadas para ser utilizadas por
+modelos de lenguaje o herramientas automáticas que generan archivos Excel.
+Para obtener los mejores resultados se deben seguir estas recomendaciones de
+contexto en cada operación:
 
-- **Apply styles at all times** so the resulting sheets look visually pleasant.
-  Use the functions in this library to style cells, tables and charts.
-- **Avoid element overlap**. Place charts in free cells and leave at least a
-  couple of rows of separation from tables or blocks of text. Never place charts
-  over text.
-- **Automatically adjust column width**. After writing tables or datasets,
-  check which cells contain long text and increase the width so everything is
-  readable without breaking the layout.
-- **Always seek the clearest and most organised layout**, separating sections
-  and grouping related elements so that the final file is easy to understand.
-- **Check the orientation of the data**. If tables are not obvious, explicitly
-  indicate whether the categories are in rows or columns so the chart functions
-  interpret them correctly.
+- **Aplicar estilos en todo momento** para que las hojas resultantes sean
+  visualmente agradables. Utiliza las funciones de esta librería para asignar
+  estilos a celdas, tablas y gráficos.
+- **Evitar la superposición de elementos**. Coloca los gráficos en celdas libres
+  y deja al menos un par de filas de separación respecto a tablas o bloques de
+  texto. Nunca sitúes gráficos encima de texto.
+- **Ajustar automáticamente el ancho de columnas**. Tras escribir tablas o
+  conjuntos de datos revisa qué celdas contienen textos largos y aumenta la
+  anchura de la columna para que todo sea legible sin romper el diseño.
+- **Buscar siempre la disposición más clara y ordenada**, separando secciones y
+  agrupando los elementos relacionados para que el fichero final sea fácil de
+  entender.
+- **Revisar la orientación de los datos**. Si las tablas no son obvias, indica
+  explícitamente si las categorías están en filas o columnas para que las
+  funciones de gráficos las interpreten correctamente.
 """
 
 import os
@@ -49,22 +52,22 @@ from pathlib import Path
 from typing import List, Dict, Union, Optional, Tuple, Any, Callable
 import math
 
-# Logging configuration
+# Configuración de logging
 logger = logging.getLogger("excel_mcp_master")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stderr)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(handler)
 
-# Import MCP
+# Importar MCP
 try:
     from mcp.server.fastmcp import FastMCP
     HAS_MCP = True
 except ImportError:
-    logger.warning("FastMCP could not be imported. MCP server features will be unavailable.")
+    logger.warning("No se pudo importar FastMCP. Las funcionalidades de servidor MCP no estarán disponibles.")
     HAS_MCP = False
 
-# Attempt to import required libraries
+# Intentar importar las bibliotecas necesarias
 try:
     import pandas as pd
     import numpy as np
@@ -84,99 +87,100 @@ try:
     from openpyxl.pivot.cache import PivotCache
     HAS_OPENPYXL = True
 except ImportError as e:
-    logger.warning(f"Failed to import required libraries: {e}")
-    logger.warning("Some functionality may be unavailable")
+    logger.warning(f"Error al importar bibliotecas esenciales: {e}")
+    logger.warning("Es posible que algunas funcionalidades no estén disponibles")
     HAS_OPENPYXL = False
 
-# Import existing Excel MCP modules
-# Note: In a real implementation we would import the functions from the existing modules
-# However, for this example the key functions are reimplemented directly
+# Importar módulos Excel MCP existentes
+# Nota: En una implementación real, importaríamos las funciones de los módulos existentes
+# Sin embargo, para este caso, vamos a reimplementar las funciones clave directamente
 
-# Base exception classes (unified)
+# Clases base de excepciones (unificadas)
 class ExcelMCPError(Exception):
-    """Base exception for all Excel MCP errors."""
+    """Excepción base para todos los errores de Excel MCP."""
     pass
 
 class FileNotFoundError(ExcelMCPError):
-    """Raised when an Excel file is not found."""
+    """Se lanza cuando no se encuentra un archivo Excel."""
     pass
 
 class FileExistsError(ExcelMCPError):
-    """Raised when attempting to create a file that already exists."""
+    """Se lanza cuando se intenta crear un archivo que ya existe."""
     pass
 
 class SheetNotFoundError(ExcelMCPError):
-    """Raised when a sheet is not found in the Excel file."""
+    """Se lanza cuando no se encuentra una hoja en el archivo Excel."""
     pass
 
 class SheetExistsError(ExcelMCPError):
-    """Raised when attempting to create a sheet that already exists."""
+    """Se lanza cuando se intenta crear una hoja que ya existe."""
     pass
 
 class CellReferenceError(ExcelMCPError):
-    """Raised when there is an issue with a cell reference."""
+    """Se lanza cuando hay un problema con una referencia de celda."""
     pass
 
 class RangeError(ExcelMCPError):
-    """Raised when there is an issue with a cell range."""
+    """Se lanza cuando hay un problema con un rango de celdas."""
     pass
 
 class TableError(ExcelMCPError):
-    """Raised when there is an issue with an Excel table."""
+    """Se lanza cuando hay un problema con una tabla de Excel."""
     pass
 
 class ChartError(ExcelMCPError):
-    """Raised when there is an issue with a chart."""
+    """Se lanza cuando hay un problema con un gráfico."""
     pass
 
 class FormulaError(ExcelMCPError):
-    """Raised when there is an issue with a formula."""
+    """Se lanza cuando hay un problema con una fórmula."""
     pass
 
 class PivotTableError(ExcelMCPError):
-    """Raised when there is an issue with a pivot table."""
+    """Se lanza cuando hay un problema con una tabla dinámica."""
     pass
 
-# Common utilities 
+# Utilidades comunes 
 class ExcelRange:
-    """Utility class for manipulating and converting Excel ranges.
-
-    This class offers helpers to convert between Excel notation (A1:B5) and
-    zero-based Python coordinates, as well as utilities for validating ranges.
+    """
+    Clase para manipular y convertir rangos de Excel.
+    
+    Esta clase proporciona métodos para convertir entre notación de Excel (A1:B5)
+    y coordenadas de Python (0-based), además de validar rangos.
     """
     
     @staticmethod
     def parse_cell_ref(cell_ref: str) -> Tuple[int, int]:
         """
-        Convert an A1-style cell reference to zero-based (row, column) coordinates.
+        Convierte una referencia de celda en estilo A1 a coordenadas (fila, columna) 0-based.
         
         Args:
-            cell_ref: Cell reference in Excel format (e.g. "A1", "B5")
+            cell_ref: Referencia de celda en formato Excel (ej: 'A1', 'B5')
             
         Returns:
-            Tuple (row, column) using zero-based indices
+            Tupla (fila, columna) con índices base 0
             
         Raises:
-            ValueError: If the cell reference is not valid
+            ValueError: Si la referencia de celda no es válida
         """
         if not cell_ref or not isinstance(cell_ref, str):
-            raise ValueError(f"Invalid cell reference: {cell_ref}")
+            raise ValueError(f"Referencia de celda inválida: {cell_ref}")
         
-        # Extract the column portion (letters)
+        # Extraer la parte de columna (letras)
         col_str = ''.join(c for c in cell_ref if c.isalpha())
-        # Extract the row portion (numbers)
+        # Extraer la parte de fila (números)
         row_str = ''.join(c for c in cell_ref if c.isdigit())
         
         if not col_str or not row_str:
-            raise ValueError(f"Invalid cell format: {cell_ref}")
+            raise ValueError(f"Formato de celda inválido: {cell_ref}")
         
-        # Convert column letters to an index (A->0, B->1, etc.)
+        # Convertir columna a índice (A->0, B->1, etc.)
         col_idx = 0
         for c in col_str.upper():
             col_idx = col_idx * 26 + (ord(c) - ord('A') + 1)
-        col_idx -= 1  # Adjust to zero-based index
-
-        # Convert row number to zero-based index
+        col_idx -= 1  # Ajustar a base 0
+        
+        # Convertir fila a índice (base 0)
         row_idx = int(row_str) - 1
         
         return row_idx, col_idx
@@ -184,34 +188,34 @@ class ExcelRange:
     @staticmethod
     def parse_range(range_str: str) -> Tuple[int, int, int, int]:
         """
-        Convert a range in A1:B5 style to zero-based coordinates (row1, col1, row2, col2).
+        Convierte un rango en estilo A1:B5 a coordenadas (row1, col1, row2, col2) 0-based.
         
         Args:
-            range_str: Range in Excel format (e.g. "A1:B5")
+            range_str: Rango en formato Excel (ej: 'A1:B5')
             
         Returns:
-            Tuple (start_row, start_col, end_row, end_col) using zero-based indices
+            Tupla (fila_inicio, col_inicio, fila_fin, col_fin) con índices base 0
             
         Raises:
-            ValueError: If the range is not valid
+            ValueError: Si el rango no es válido
         """
         if not range_str or not isinstance(range_str, str):
-            raise ValueError(f"Invalid range: {range_str}")
+            raise ValueError(f"Rango inválido: {range_str}")
         
-        # Handle ranges that include a sheet reference
+        # Manejar rangos con referencia a hoja
         if '!' in range_str:
             parts = range_str.split('!')
             if len(parts) != 2:
-                raise ValueError(f"Invalid range with sheet format: {range_str}")
-            range_str = parts[1]  # Use only the range portion
+                raise ValueError(f"Formato de rango con hoja inválido: {range_str}")
+            range_str = parts[1]  # Usar solo la parte del rango
         
-        # Split the range into starting and ending cells
+        # Dividir el rango en celdas de inicio y fin
         if ':' in range_str:
             start_cell, end_cell = range_str.split(':')
             start_row, start_col = ExcelRange.parse_cell_ref(start_cell)
             end_row, end_col = ExcelRange.parse_cell_ref(end_cell)
         else:
-            # If only one cell, start and end are the same
+            # Si es una sola celda, inicio y fin son iguales
             start_row, start_col = ExcelRange.parse_cell_ref(range_str)
             end_row, end_col = start_row, start_col
         
@@ -220,28 +224,28 @@ class ExcelRange:
     @staticmethod
     def cell_to_a1(row: int, col: int) -> str:
         """
-        Convert zero-based (row, column) coordinates to an A1 cell reference.
+        Convierte coordenadas (fila, columna) 0-based a referencia de celda A1.
         
         Args:
-            row: Row index (zero-based)
-            col: Column index (zero-based)
+            row: Índice de fila (base 0)
+            col: Índice de columna (base 0)
             
         Returns:
-            Cell reference in A1 format
+            Referencia de celda en formato A1
         """
         if row < 0 or col < 0:
-            raise ValueError(f"Negative indices not allowed: row={row}, column={col}")
+            raise ValueError(f"Índices negativos no válidos: fila={row}, columna={col}")
         
-        # Convert column index to letters
+        # Convertir columna a letras
         col_str = ""
-        col_val = col + 1  # Convert to base 1 for calculation
+        col_val = col + 1  # Convertir a base 1 para cálculo
         
         while col_val > 0:
             remainder = (col_val - 1) % 26
             col_str = chr(65 + remainder) + col_str
             col_val = (col_val - 1) // 26
         
-        # Convert row index to a 1-based Excel number
+        # Convertir fila a número (base 1 para Excel)
         row_val = row + 1
         
         return f"{col_str}{row_val}"
@@ -249,16 +253,16 @@ class ExcelRange:
     @staticmethod
     def range_to_a1(start_row: int, start_col: int, end_row: int, end_col: int) -> str:
         """
-        Convert zero-based range coordinates to an A1:B5 style range.
+        Convierte coordenadas de rango 0-based a rango A1:B5.
         
         Args:
-            start_row: Starting row (zero-based)
-            start_col: Starting column (zero-based)
-            end_row: Ending row (zero-based)
-            end_col: Ending column (zero-based)
+            start_row: Fila inicial (base 0)
+            start_col: Columna inicial (base 0)
+            end_row: Fila final (base 0)
+            end_col: Columna final (base 0)
             
         Returns:
-            Range in A1:B5 format
+            Rango en formato A1:B5
         """
         start_cell = ExcelRange.cell_to_a1(start_row, start_col)
         end_cell = ExcelRange.cell_to_a1(end_row, end_col)
@@ -269,49 +273,49 @@ class ExcelRange:
 
     @staticmethod
     def parse_range_with_sheet(range_str: str) -> Tuple[Optional[str], int, int, int, int]:
-        """Convert a range that may include a sheet to a tuple ``(sheet, row1, col1, row2, col2)``.
+        """Convierte un rango que puede incluir hoja a tupla ``(sheet, row1, col1, row2, col2)``.
 
         Args:
-            range_str: Range string, possibly with sheet prefix ``Sheet!A1:B2``.
+            range_str: Cadena de rango, posiblemente con prefijo de hoja ``Hoja!A1:B2``.
 
         Returns:
-            Tuple ``(sheet, start_row, start_col, end_row, end_col)`` where ``sheet``
-            is ``None`` if no sheet was specified.
+            Tupla ``(sheet, start_row, start_col, end_row, end_col)`` donde ``sheet``
+            es ``None`` si no se especificó hoja.
         """
         if not range_str or not isinstance(range_str, str):
-            raise ValueError(f"Invalid range: {range_str}")
+            raise ValueError(f"Rango inválido: {range_str}")
 
         sheet_name = None
         pure_range = range_str
         if "!" in range_str:
             parts = range_str.split("!", 1)
             if len(parts) != 2:
-                raise ValueError(f"Invalid range with sheet format: {range_str}")
+                raise ValueError(f"Formato de rango con hoja inválido: {range_str}")
             sheet_name = parts[0].strip("'")
             pure_range = parts[1]
 
         start_row, start_col, end_row, end_col = ExcelRange.parse_range(pure_range)
         return sheet_name, start_row, start_col, end_row, end_col
 
-# Constants and mappings
-# Map style names to Excel style numbers
+# Constantes y mapeos
+# Mapeo de nombres de estilo a números de estilo de Excel
 CHART_STYLE_NAMES = {
-    # Light styles
+    # Estilos claros
     'light-1': 1, 'light-2': 2, 'light-3': 3, 'light-4': 4, 'light-5': 5, 'light-6': 6,
     'office-1': 1, 'office-2': 2, 'office-3': 3, 'office-4': 4, 'office-5': 5, 'office-6': 6,
     'white': 1, 'minimal': 2, 'soft': 3, 'gradient': 4, 'muted': 5, 'outlined': 6,
     
-    # Dark styles
+    # Estilos oscuros
     'dark-1': 7, 'dark-2': 8, 'dark-3': 9, 'dark-4': 10, 'dark-5': 11, 'dark-6': 12, 
     'dark-blue': 7, 'dark-gray': 8, 'dark-green': 9, 'dark-red': 10, 'dark-purple': 11, 'dark-orange': 12,
     'navy': 7, 'charcoal': 8, 'forest': 9, 'burgundy': 10, 'indigo': 11, 'rust': 12,
     
-    # Colorful styles
+    # Estilos coloridos
     'colorful-1': 13, 'colorful-2': 14, 'colorful-3': 15, 'colorful-4': 16, 
     'colorful-5': 17, 'colorful-6': 18, 'colorful-7': 19, 'colorful-8': 20,
     'bright': 13, 'vivid': 14, 'rainbow': 15, 'multi': 16, 'contrast': 17, 'vibrant': 18,
     
-    # Office themes
+    # Temas de Office
     'ion-1': 21, 'ion-2': 22, 'ion-3': 23, 'ion-4': 24,
     'wisp-1': 25, 'wisp-2': 26, 'wisp-3': 27, 'wisp-4': 28,
     'aspect-1': 29, 'aspect-2': 30, 'aspect-3': 31, 'aspect-4': 32,
@@ -319,7 +323,7 @@ CHART_STYLE_NAMES = {
     'gallery-1': 37, 'gallery-2': 38, 'gallery-3': 39, 'gallery-4': 40,
     'median-1': 41, 'median-2': 42, 'median-3': 43, 'median-4': 44,
     
-    # Styles for specific chart types
+    # Estilos para tipos específicos de gráficos
     'column-default': 1, 'column-dark': 7, 'column-colorful': 13, 
     'bar-default': 1, 'bar-dark': 7, 'bar-colorful': 13,
     'line-default': 1, 'line-dark': 7, 'line-markers': 3, 'line-dash': 5,
@@ -328,19 +332,19 @@ CHART_STYLE_NAMES = {
     'scatter-default': 1, 'scatter-dark': 7, 'scatter-bubble': 4, 'scatter-smooth': 9,
 }
 
-# Mapping between styles and recommended color palettes
+# Mapeo entre estilos y paletas de colores recomendadas
 STYLE_TO_PALETTE = {
-    # Light styles (1-6)
+    # Estilos claros (1-6)
     1: 'office', 2: 'office', 3: 'colorful', 4: 'colorful', 5: 'pastel', 6: 'pastel',
-    # Dark styles (7-12)
+    # Estilos oscuros (7-12)
     7: 'dark-blue', 8: 'dark-gray', 9: 'dark-green', 10: 'dark-red', 11: 'dark-purple', 12: 'dark-orange',
-    # Colorful styles (13-20)
+    # Estilos coloridos (13-20)
     13: 'colorful', 14: 'colorful', 15: 'colorful', 16: 'colorful', 
     17: 'colorful', 18: 'colorful', 19: 'colorful', 20: 'colorful',
 }
 
-# CHART_COLOR_SCHEMES - normally defined in the original module
-# Included here in simplified form
+# CHART_COLOR_SCHEMES (con esquemas de colores) - Esta constante estaría normalmente definida 
+# en el módulo original, pero la incluyo simplificada
 CHART_COLOR_SCHEMES = {
     'default': ['4472C4', 'ED7D31', 'A5A5A5', 'FFC000', '5B9BD5', '70AD47', '8549BA', 'C55A11'],
     'colorful': ['5B9BD5', 'ED7D31', 'A5A5A5', 'FFC000', '4472C4', '70AD47', '264478', '9E480E'],
@@ -352,65 +356,66 @@ CHART_COLOR_SCHEMES = {
     'dark-orange': ['C55A11', 'ED7D31', 'F4B183', 'FFC000', 'FFD966', 'FF8C00', 'FF7F50', 'FF4500']
 }
 
-# Helper function to obtain a worksheet (unified)
+# Función auxiliar para obtener una hoja de trabajo (unificada)
 def get_sheet(wb, sheet_name_or_index) -> Any:
-    """Retrieve a worksheet by name or index.
-
+    """
+    Obtiene una hoja de Excel por nombre o índice.
+    
     Args:
-        wb: Openpyxl workbook object.
-        sheet_name_or_index: Sheet name or numeric index.
-
+        wb: Objeto workbook de openpyxl
+        sheet_name_or_index: Nombre o índice de la hoja
+        
     Returns:
-        Worksheet object.
-
+        Objeto worksheet
+        
     Raises:
-        SheetNotFoundError: If the sheet does not exist.
+        SheetNotFoundError: Si la hoja no existe
     """
     if wb is None:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
     if isinstance(sheet_name_or_index, int):
-        # If an index is provided, try to access by position
+        # Si es un índice, intentar acceder por posición
         if 0 <= sheet_name_or_index < len(wb.worksheets):
             return wb.worksheets[sheet_name_or_index]
         else:
-            raise SheetNotFoundError(f"No sheet exists with index {sheet_name_or_index}")
+            raise SheetNotFoundError(f"No existe una hoja con el índice {sheet_name_or_index}")
     else:
-        # If a name is provided, try to access by name
+        # Si es un nombre, intentar acceder por nombre
         try:
             return wb[sheet_name_or_index]
         except KeyError:
             sheets_info = ", ".join(wb.sheetnames)
-            raise SheetNotFoundError(f"Sheet '{sheet_name_or_index}' does not exist in the file. Available sheets: {sheets_info}")
+            raise SheetNotFoundError(f"La hoja '{sheet_name_or_index}' no existe en el archivo. Hojas disponibles: {sheets_info}")
         except Exception as e:
-            raise ExcelMCPError(f"Error accessing sheet: {e}")
+            raise ExcelMCPError(f"Error al acceder a la hoja: {e}")
 
-# Helper function to convert a style specifier into a numeric style
+# Función auxiliar para convertir estilo a número
 def parse_chart_style(style):
     """
-    Convert different style formats into a numeric Excel style (1-48).
-
+    Convierte diferentes formatos de estilo a un número de estilo de Excel (1-48).
+    
     Args:
-        style: Style as an int, numeric str, ``styleN`` or descriptive name.
-
+        style: Estilo en formato int, str numérico, 'styleN', o nombre descriptivo
+        
     Returns:
-        Integer style between 1 and 48, or ``None`` if not valid.
+        Número de estilo entre 1-48, o None si no es un estilo válido
     """
     if isinstance(style, int) and 1 <= style <= 48:
         return style
         
     if isinstance(style, str):
-        # Case 1: numeric string like '5'
+        # Caso 1: String numérico '5'
         if style.isdigit():
             style_num = int(style)
             if 1 <= style_num <= 48:
                 return style_num
                 
-        # Case 2: format 'styleN' or 'Style N'
+        # Caso 2: Formato 'styleN' o 'Style N'
         style_lower = style.lower()
         if style_lower.startswith('style'):
             try:
-                # Extract the number following 'style'
+                # Extraer el número después de 'style'
                 num_part = ''.join(c for c in style_lower[5:] if c.isdigit())
                 if num_part:
                     style_num = int(num_part)
@@ -419,88 +424,89 @@ def parse_chart_style(style):
             except (ValueError, IndexError):
                 pass
                 
-        # Case 3: descriptive name ('dark-blue', etc.)
+        # Caso 3: Nombre descriptivo ('dark-blue', etc.)
         if style_lower in CHART_STYLE_NAMES:
             return CHART_STYLE_NAMES[style_lower]
             
     return None
 
-# Helper to apply chart styles and colors simultaneously
+# Función auxiliar para aplicar estilos a gráficos y colores a la vez
 def apply_chart_style(chart, style):
     """
-    Apply a predefined style to a chart including the appropriate color palette.
-
+    Aplica un estilo predefinido al gráfico, incluyendo paleta de colores adecuada.
+    
     Args:
-        chart: Openpyxl chart object.
-        style: Style in any supported format (number, name, etc.).
-
+        chart: Objeto de gráfico openpyxl
+        style: Estilo en cualquier formato soportado (número, nombre, etc.)
+    
     Returns:
-        ``True`` if applied successfully, ``False`` otherwise.
+        True si se aplicó correctamente, False en caso contrario
     """
-    # Convert to a style number if needed
+    # Convertir a número de estilo si no lo es ya
     style_number = parse_chart_style(style)
     
     if style_number is None:
         style_str = str(style) if style else "None"
-        logger.warning(f"Invalid chart style: '{style_str}'. Must be a number between 1-48 or a valid style name.")
-        logger.info("Valid style names include: 'dark-blue', 'light-1', 'colorful-3', etc.")
+        logger.warning(f"Estilo de gráfico inválido: '{style_str}'. Debe ser un número entre 1-48 o un nombre de estilo válido.")
+        logger.info("Nombres de estilo válidos incluyen: 'dark-blue', 'light-1', 'colorful-3', etc.")
         return False
         
     if not (1 <= style_number <= 48):
-        logger.warning(f"Invalid chart style: {style_number}. It must be between 1 and 48.")
+        logger.warning(f"Estilo de gráfico inválido: {style_number}. Debe estar entre 1 y 48.")
         return False
     
-    # Step 1: apply the numeric style to native Excel attributes
+    # Paso 1: Aplicar número de estilo a atributos del estilo nativo de Excel
     try:
-        # The style property in openpyxl corresponds to the Excel style number
+        # La propiedad style en openpyxl se corresponde con el número de estilo de Excel
         chart.style = style_number
-        logger.info(f"Applied native style {style_number} to chart")
+        logger.info(f"Aplicado estilo nativo {style_number} al gráfico")
     except Exception as e:
-        logger.warning(f"Error applying style {style_number}: {e}")
+        logger.warning(f"Error al aplicar estilo {style_number}: {e}")
     
-    # Step 2: apply the color palette associated with the style's theme
+    # Paso 2: Aplicar paleta de colores asociada según el tema correspondiente al estilo
     palette_name = STYLE_TO_PALETTE.get(style_number, 'default')
     colors = CHART_COLOR_SCHEMES.get(palette_name, CHART_COLOR_SCHEMES['default'])
     
-    # Apply colors to the series
+    # Aplicar colores a las series
     try:
         from openpyxl.chart.shapes import GraphicalProperties
         from openpyxl.drawing.fill import ColorChoice
         
         for i, series in enumerate(chart.series):
             if i < len(colors):
-                # Ensure graphical properties exist
+                # Asegurarse de que existen propiedades gráficas
                 if not hasattr(series, 'graphicalProperties') or series.graphicalProperties is None:
                     series.graphicalProperties = GraphicalProperties()
                     
-                # Assign color using ColorChoice for better compatibility
+                # Asignar color usando ColorChoice para mejor compatibilidad
                 color = colors[i % len(colors)]
                 if isinstance(color, str) and color.startswith('#'):
                     color = color[1:]
                     
                 series.graphicalProperties.solidFill = ColorChoice(srgbClr=color)
                 
-        logger.info(f"Applied style {style_number} with palette '{palette_name}' to chart")
+        logger.info(f"Aplicado estilo {style_number} con paleta '{palette_name}' al gráfico")
         return True
         
     except Exception as e:
-        logger.warning(f"Error applying colors for style {style_number}: {e}")
+        logger.warning(f"Error al aplicar colores para estilo {style_number}: {e}")
         return False
 
 def determine_orientation(ws: Any, min_row: int, min_col: int, max_row: int, max_col: int) -> bool:
-    """Attempt to guess the orientation of the data.
+    """Intenta deducir la orientación de los datos.
 
-    Returns ``True`` if categories appear to be in the first column (column
-    oriented) and ``False`` if they are more likely in the first row. The
-    algorithm compares the ratio of numeric values for both interpretations and
-    uses the shape of the range as a tiebreaker. This helps a language model
-    avoid choosing wrong headers in ambiguous tables.
+    Devuelve ``True`` si las categorías parecen estar en la primera columna
+    (orientación por columnas) y ``False`` si lo más probable es que se
+    encuentren en la primera fila. El algoritmo compara la proporción de valores
+    numéricos al interpretar los datos de ambas maneras y usa la forma del rango
+    como desempate. Está pensado para que un LLM evite elegir encabezados
+    equivocados en tablas cuadradas o poco claras.
     """
 
     def _is_number(value: Any) -> bool:
         return isinstance(value, (int, float)) and not isinstance(value, bool)
 
-    # Calculate ratio of numbers assuming categories are in the first column
+    # Calcular ratio de números asumiendo categorías en la primera columna
     col_numeric = col_total = 0
     for c in range(min_col + 1, max_col + 1):
         for r in range(min_row, max_row + 1):
@@ -512,7 +518,7 @@ def determine_orientation(ws: Any, min_row: int, min_col: int, max_row: int, max
 
     col_ratio = (col_numeric / col_total) if col_total else 0
 
-    # Calculate ratio of numbers assuming categories are in the first row
+    # Calcular ratio de números asumiendo categorías en la primera fila
     row_numeric = row_total = 0
     for r in range(min_row + 1, max_row + 1):
         for c in range(min_col, max_col + 1):
@@ -525,15 +531,15 @@ def determine_orientation(ws: Any, min_row: int, min_col: int, max_row: int, max
     row_ratio = (row_numeric / row_total) if row_total else 0
 
     if row_ratio > col_ratio:
-        return False  # headers in the first row
+        return False  # encabezados en la primera fila
     if col_ratio > row_ratio:
-        return True   # headers in the first column
+        return True   # encabezados en la primera columna
 
-    # Tiebreaker based on range shape
+    # Desempate por forma del rango
     return (max_row - min_row) >= (max_col - min_col)
 
 def _trim_range_to_data(ws: Any, min_row: int, min_col: int, max_row: int, max_col: int) -> Tuple[int, int, int, int]:
-    """Remove trailing empty rows and columns from a range."""
+    """Elimina filas y columnas vacías al final de un rango."""
     while max_row >= min_row:
         if all(ws.cell(row=max_row, column=c).value in (None, "") for c in range(min_col, max_col + 1)):
             max_row -= 1
@@ -554,23 +560,23 @@ def _range_has_blank(ws: Any, min_row: int, min_col: int, max_row: int, max_col:
     return False
 
 # ----------------------------------------
-# BASE FUNCTIONS
+# FUNCIONES BASE (reimplementadas de los módulos originales)
 # ----------------------------------------
 
-# 1. Workbook management
+# 1. Gestión de Workbooks (de workbook_manager_mcp.py)
 def create_workbook(filename: str, overwrite: bool = False) -> Any:
     """
-    Create a new empty Excel file.
-
+    Crea un nuevo fichero Excel vacío.
+    
     Args:
-        filename (str): Full path and name of the file to create.
-        overwrite (bool, optional): Overwrite existing file if ``True``.
-
+        filename (str): Ruta y nombre del archivo a crear.
+        overwrite (bool, opcional): Si es True, sobreescribe archivo existente.
+        
     Returns:
-        Workbook object.
-
+        Objeto Workbook.
+        
     Raises:
-        FileExistsError: If the file exists and ``overwrite`` is ``False``.
+        FileExistsError: Si el archivo existe y overwrite es False.
     """
     if os.path.exists(filename) and not overwrite:
         raise FileExistsError(f"El archivo '{filename}' ya existe. Use overwrite=True para sobreescribir.")
@@ -582,16 +588,16 @@ def create_workbook(filename: str, overwrite: bool = False) -> Any:
 
 def open_workbook(filename: str) -> Any:
     """
-    Open an existing Excel file.
-
+    Abre un fichero Excel existente.
+    
     Args:
-        filename (str): Path to the file.
-
+        filename (str): Ruta del archivo.
+        
     Returns:
-        Workbook object.
-
+        Objeto Workbook.
+        
     Raises:
-        FileNotFoundError: If the file does not exist.
+        FileNotFoundError: Si el archivo no existe.
     """
     if not os.path.exists(filename):
         raise FileNotFoundError(f"El archivo '{filename}' no existe.")
@@ -600,25 +606,25 @@ def open_workbook(filename: str) -> Any:
         wb = openpyxl.load_workbook(filename)
         return wb
     except Exception as e:
-        logger.error(f"Error opening file '{filename}': {e}")
-        raise ExcelMCPError(f"Error opening file: {e}")
+        logger.error(f"Error al abrir el archivo '{filename}': {e}")
+        raise ExcelMCPError(f"Error al abrir el archivo: {e}")
 
 def save_workbook(wb: Any, filename: Optional[str] = None) -> str:
     """
-    Save the workbook to disk.
-
+    Guarda el Workbook en disco.
+    
     Args:
-        wb: Workbook object.
-        filename (str, optional): Alternative file name if provided.
-
+        wb: Objeto Workbook.
+        filename (str, opcional): Si se indica, guarda con otro nombre.
+        
     Returns:
-        Path to the saved file.
-
+        Ruta del fichero guardado.
+        
     Raises:
-        ExcelMCPError: If an error occurs while saving.
+        ExcelMCPError: Si hay error al guardar.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
     try:
         # Si no se proporciona filename, usar el filename original si existe
@@ -630,47 +636,47 @@ def save_workbook(wb: Any, filename: Optional[str] = None) -> str:
         wb.save(filename)
         return filename
     except Exception as e:
-        logger.error(f"Error saving workbook to '{filename}': {e}")
-        raise ExcelMCPError(f"Error saving workbook: {e}")
+        logger.error(f"Error al guardar el workbook en '{filename}': {e}")
+        raise ExcelMCPError(f"Error al guardar el workbook: {e}")
 
 def close_workbook(wb: Any) -> None:
     """
-    Close the workbook in memory.
-
+    Cierra el Workbook en memoria.
+    
     Args:
-        wb: Workbook object.
-
+        wb: Objeto Workbook.
+        
     Returns:
-        None.
+        Ninguno.
     """
     if not wb:
         return
     
     try:
-        # Openpyxl does not really have a close() method,
-        # but we can remove references to help the GC
+        # Openpyxl realmente no tiene un método close(),
+        # pero podemos eliminar referencias para ayudar al GC
         if hasattr(wb, "_archive"):
             wb._archive.close()
     except Exception as e:
-        logger.warning(f"Warning while closing workbook: {e}")
+        logger.warning(f"Advertencia al cerrar workbook: {e}")
 
 def list_sheets(wb: Any) -> List[str]:
     """
-    Return a list of sheet names.
-
+    Devuelve lista de nombres de hojas.
+    
     Args:
-        wb: Workbook object.
-
+        wb: Objeto Workbook.
+        
     Returns:
-        List[str]: Names of the sheets.
+        List[str]: Lista de nombres de hojas.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
     if hasattr(wb, 'sheetnames'):
         return wb.sheetnames
     
-    # Alternative if sheetnames cannot be accessed
+    # Alternativa si no se puede acceder a sheetnames
     sheet_names = []
     for sheet in wb.worksheets:
         if hasattr(sheet, 'title'):
@@ -680,27 +686,27 @@ def list_sheets(wb: Any) -> List[str]:
 
 def add_sheet(wb: Any, sheet_name: str, index: Optional[int] = None) -> Any:
     """
-    Add a new empty worksheet.
-
+    Añade una nueva hoja vacía.
+    
     Args:
-        wb: Workbook object.
-        sheet_name (str): Name of the sheet.
-        index (int, optional): Position in the tab list.
-
+        wb: Objeto Workbook.
+        sheet_name (str): Nombre de la hoja.
+        index (int, opcional): Posición en pestañas.
+        
     Returns:
-        The created worksheet.
-
+        Hoja creada.
+        
     Raises:
-        SheetExistsError: If a sheet with that name already exists.
+        SheetExistsError: Si ya existe una hoja con ese nombre.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
-    # Check if a sheet with that name already exists
+    # Verificar si ya existe una hoja con ese nombre
     if sheet_name in list_sheets(wb):
-        raise SheetExistsError(f"A sheet named '{sheet_name}' already exists")
+        raise SheetExistsError(f"Ya existe una hoja con el nombre '{sheet_name}'")
     
-    # Create new sheet
+    # Crear nueva hoja
     if index is not None:
         ws = wb.create_sheet(sheet_name, index)
     else:
@@ -710,113 +716,113 @@ def add_sheet(wb: Any, sheet_name: str, index: Optional[int] = None) -> Any:
 
 def delete_sheet(wb: Any, sheet_name: str) -> None:
     """
-    Delete the specified worksheet.
-
+    Elimina la hoja indicada.
+    
     Args:
-        wb: Workbook object.
-        sheet_name (str): Name of the sheet to remove.
-
+        wb: Objeto Workbook.
+        sheet_name (str): Nombre de la hoja a eliminar.
+        
     Raises:
-        SheetNotFoundError: If the sheet does not exist.
+        SheetNotFoundError: Si la hoja no existe.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
-    # Check that the sheet exists
+    # Verificar que la hoja existe
     if sheet_name not in list_sheets(wb):
-        raise SheetNotFoundError(f"Sheet '{sheet_name}' does not exist in the workbook")
+        raise SheetNotFoundError(f"La hoja '{sheet_name}' no existe en el workbook")
     
-    # Delete the sheet
+    # Eliminar la hoja
     try:
         del wb[sheet_name]
     except Exception as e:
-        logger.error(f"Error deleting sheet '{sheet_name}': {e}")
-        raise ExcelMCPError(f"Error deleting sheet: {e}")
+        logger.error(f"Error al eliminar la hoja '{sheet_name}': {e}")
+        raise ExcelMCPError(f"Error al eliminar la hoja: {e}")
 
 def rename_sheet(wb: Any, old_name: str, new_name: str) -> None:
     """
-    Rename a worksheet.
-
+    Renombra una hoja.
+    
     Args:
-        wb: Workbook object.
-        old_name (str): Current sheet name.
-        new_name (str): New sheet name.
-
+        wb: Objeto Workbook.
+        old_name (str): Nombre actual de la hoja.
+        new_name (str): Nuevo nombre para la hoja.
+        
     Raises:
-        SheetNotFoundError: If the original sheet does not exist.
-        SheetExistsError: If a sheet with the new name already exists.
+        SheetNotFoundError: Si la hoja original no existe.
+        SheetExistsError: Si ya existe una hoja con el nuevo nombre.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
-    # Check that the original sheet exists
+    # Verificar que la hoja original existe
     if old_name not in list_sheets(wb):
-        raise SheetNotFoundError(f"Sheet '{old_name}' does not exist in the workbook")
+        raise SheetNotFoundError(f"La hoja '{old_name}' no existe en el workbook")
     
-    # Check that no sheet with the new name exists
+    # Verificar que no exista una hoja con el nuevo nombre
     if new_name in list_sheets(wb) and old_name != new_name:
-        raise SheetExistsError(f"A sheet named '{new_name}' already exists")
+        raise SheetExistsError(f"Ya existe una hoja con el nombre '{new_name}'")
     
-    # Rename the sheet
+    # Renombrar la hoja
     try:
         wb[old_name].title = new_name
     except Exception as e:
-        logger.error(f"Error renaming sheet '{old_name}' to '{new_name}': {e}")
-        raise ExcelMCPError(f"Error renaming sheet: {e}")
+        logger.error(f"Error al renombrar la hoja '{old_name}' a '{new_name}': {e}")
+        raise ExcelMCPError(f"Error al renombrar la hoja: {e}")
 
-# 2. Data reading and exploration
-def read_sheet_data(wb: Any, sheet_name: str, range_str: Optional[str] = None,
+# 2. Lectura y exploración de datos (de excel_mcp_complete.py)
+def read_sheet_data(wb: Any, sheet_name: str, range_str: Optional[str] = None, 
                    formulas: bool = False) -> List[List[Any]]:
     """
-    Read values and optionally formulas from an Excel sheet.
+    Lee valores y, opcionalmente, fórmulas de una hoja de Excel.
     
     Args:
-        wb: Openpyxl workbook object
-        sheet_name: Sheet name
-        range_str: Range in ``A1:B5`` format or ``None`` for the whole sheet
-        formulas: If ``True`` return formulas instead of calculated values
+        wb: Objeto workbook de openpyxl
+        sheet_name: Nombre de la hoja
+        range_str: Rango en formato A1:B5, o None para toda la hoja
+        formulas: Si es True, devuelve fórmulas en lugar de valores calculados
     
     Returns:
-        List of lists with cell values or formulas
+        Lista de listas con los valores o fórmulas de las celdas
         
     Raises:
-        SheetNotFoundError: If the sheet does not exist
-        RangeError: If the range is invalid
+        SheetNotFoundError: Si la hoja no existe
+        RangeError: Si el rango es inválido
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # If no range is specified, use the whole sheet
+    # Si no se especifica rango, usar toda la hoja
     if not range_str:
-        # Determine the used range (min_row, min_col, max_row, max_col)
+        # Determinar el rango usado (min_row, min_col, max_row, max_col)
         min_row, min_col = 1, 1
         max_row = ws.max_row
         max_col = ws.max_column
     else:
-        # Parse the specified range
+        # Parsear el rango especificado
         try:
             min_row, min_col, max_row, max_col = ExcelRange.parse_range(range_str)
-            # Convert to 1-based for openpyxl
+            # Convertir a base 1 para openpyxl
             min_row += 1
             min_col += 1
             max_row += 1
             max_col += 1
         except ValueError as e:
-            raise RangeError(f"Invalid range '{range_str}': {e}")
+            raise RangeError(f"Rango inválido '{range_str}': {e}")
     
-    # Extract data from the range
+    # Extraer datos del rango
     data = []
     for row in range(min_row, max_row + 1):
         row_data = []
         for col in range(min_col, max_col + 1):
             cell = ws.cell(row=row, column=col)
             
-            # Get the appropriate value (formula or calculated value)
+            # Obtener el valor adecuado (fórmula o valor calculado)
             if formulas and cell.data_type == 'f':
-                # If formulas are requested and the cell has one
-                value = cell.value  # This is the formula with '='
+                # Si queremos fórmulas y la celda tiene una fórmula
+                value = cell.value  # Esto es la fórmula con '='
             else:
-                # Normal or calculated value
+                # Valor normal o calculado
                 value = cell.value
             
             row_data.append(value)
@@ -826,25 +832,25 @@ def read_sheet_data(wb: Any, sheet_name: str, range_str: Optional[str] = None,
 
 def list_tables(wb: Any, sheet_name: str) -> List[Dict[str, Any]]:
     """
-    List all tables defined on an Excel sheet.
+    Lista todas las tablas definidas en una hoja de Excel.
     
     Args:
-        wb: Openpyxl workbook object
-        sheet_name: Sheet name
+        wb: Objeto workbook de openpyxl
+        sheet_name: Nombre de la hoja
         
     Returns:
-        List of dictionaries with table information
+        Lista de diccionarios con información de las tablas
         
     Raises:
-        SheetNotFoundError: If the sheet does not exist
+        SheetNotFoundError: Si la hoja no existe
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # List to store table information
+    # Lista para almacenar información de las tablas
     tables_info = []
     
-    # Check if the sheet has tables
+    # Verificar si la hoja tiene tablas
     if hasattr(ws, 'tables') and ws.tables:
         for table_name, table in ws.tables.items():
             table_info = {
@@ -862,47 +868,47 @@ def list_tables(wb: Any, sheet_name: str) -> List[Dict[str, Any]]:
 
 def get_table_data(wb: Any, sheet_name: str, table_name: str) -> List[Dict[str, Any]]:
     """
-    Get the data from a specific table as records.
+    Obtiene los datos de una tabla específica en formato de registros.
     
     Args:
-        wb: Openpyxl workbook object
-        sheet_name: Sheet name
-        table_name: Table name
+        wb: Objeto workbook de openpyxl
+        sheet_name: Nombre de la hoja
+        table_name: Nombre de la tabla
         
     Returns:
-        List of dictionaries, where each dictionary represents a row
+        Lista de diccionarios, donde cada diccionario representa una fila
         
     Raises:
-        SheetNotFoundError: If the sheet does not exist
-        TableError: If the table does not exist
+        SheetNotFoundError: Si la hoja no existe
+        TableError: Si la tabla no existe
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # Check if the table exists
+    # Verificar si la tabla existe
     if not hasattr(ws, 'tables') or table_name not in ws.tables:
-        raise TableError(f"Table '{table_name}' does not exist on sheet '{sheet_name}'")
+        raise TableError(f"La tabla '{table_name}' no existe en la hoja '{sheet_name}'")
     
-    # Get the table reference
+    # Obtener la referencia de la tabla
     table = ws.tables[table_name]
     table_range = table.ref
     
-    # Parse the range
+    # Parsear el rango
     min_row, min_col, max_row, max_col = ExcelRange.parse_range(table_range)
     
-    # Adjust to 1-based for openpyxl
+    # Ajustar a base 1 para openpyxl
     min_row += 1
     min_col += 1
     max_row += 1
     max_col += 1
     
-    # Extract headers (first row)
+    # Extraer encabezados (primera fila)
     headers = []
     for col in range(min_col, max_col + 1):
         cell = ws.cell(row=min_row, column=col)
         headers.append(cell.value or f"Column{col}")
     
-    # Extract data (rows after the header)
+    # Extraer datos (filas después del encabezado)
     data = []
     for row in range(min_row + 1, max_row + 1):
         row_data = {}
@@ -916,31 +922,31 @@ def get_table_data(wb: Any, sheet_name: str, table_name: str) -> List[Dict[str, 
 
 def list_charts(wb: Any, sheet_name: str) -> List[Dict[str, Any]]:
     """
-    List all charts on an Excel sheet.
+    Lista todos los gráficos en una hoja de Excel.
     
     Args:
-        wb: Openpyxl workbook object
-        sheet_name: Sheet name
+        wb: Objeto workbook de openpyxl
+        sheet_name: Nombre de la hoja
         
     Returns:
-        List of dictionaries with chart information
+        Lista de diccionarios con información de los gráficos
         
     Raises:
-        SheetNotFoundError: If the sheet does not exist
+        SheetNotFoundError: Si la hoja no existe
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # List to store chart information
+    # Lista para almacenar información de los gráficos
     charts_info = []
     
-    # Check if the sheet has charts
+    # Verificar si la hoja tiene gráficos
     if hasattr(ws, '_charts'):
         for chart_id, chart_rel in enumerate(ws._charts):
-            chart = chart_rel[0]  # Element 0 is the chart object, 1 is position
+            chart = chart_rel[0]  # El elemento 0 es el objeto chart, el 1 es position
             
-            # Determine the chart type
-            chart_type = "unknown"
+            # Determinar el tipo de gráfico
+            chart_type = "desconocido"
             if isinstance(chart, BarChart):
                 chart_type = "bar" if chart.type == "bar" else "column"
             elif isinstance(chart, LineChart):
@@ -952,7 +958,7 @@ def list_charts(wb: Any, sheet_name: str) -> List[Dict[str, Any]]:
             elif isinstance(chart, AreaChart):
                 chart_type = "area"
             
-            # Gather chart information
+            # Recopilar información del gráfico
             chart_info = {
                 'id': chart_id,
                 'type': chart_type,
@@ -968,29 +974,29 @@ def list_charts(wb: Any, sheet_name: str) -> List[Dict[str, Any]]:
 # 3. Escritura y formato de datos (de excel_writer_mcp.py)
 def write_sheet_data(ws: Any, start_cell: str, data: List[List[Any]]) -> None:
     """
-    Write a two-dimensional array of values or formulas.
-     **Emojis must never be included in text written to cells, labels, titles or Excel charts.**
+    Escribe un array bidimensional de valores o fórmulas.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
 
-    To ensure the output remains readable when the function is used by a language
-    model, it is recommended to apply styles after writing and check the length
-    of the resulting cells. If any column contains very long text, its width
-    should be increased to avoid cutting off the content. This way the generated
-    files will look professional.
+    Para garantizar que la salida sea legible cuando la función es utilizada por
+    un modelo de lenguaje se recomienda aplicar estilos tras la escritura y
+    comprobar la longitud de las celdas resultantes. Si alguna columna contiene
+    textos muy largos, se debe aumentar su ancho para evitar que el contenido se
+    corte. De esta forma los ficheros generados tendrán un aspecto profesional.
 
     Args:
-        ws: Openpyxl worksheet object
-        start_cell (str): Anchor cell (e.g. "A1")
-        data (List[List]): Values or strings "=FORMULA(...)"
+        ws: Objeto worksheet de openpyxl
+        start_cell (str): Celda de anclaje (e.j. "A1")
+        data (List[List]): Valores o cadenas "=FÓRMULA(...)"
         
     Raises:
-        CellReferenceError: If the cell reference is invalid
+        CellReferenceError: Si la referencia de celda es inválida
     """
     if not ws:
-        raise ExcelMCPError("Worksheet cannot be None")
+        raise ExcelMCPError("El worksheet no puede ser None")
     
     if not data or not isinstance(data, list):
-        raise ExcelMCPError("Data must be a non-empty list")
+        raise ExcelMCPError("Los datos deben ser una lista no vacía")
     
     try:
         # Parsear la celda inicial para obtener fila y columna base
@@ -1002,7 +1008,7 @@ def write_sheet_data(ws: Any, start_cell: str, data: List[List[Any]]) -> None:
                 continue
 
             if not isinstance(row_data, list):
-                # If it's not a list, treat it as a single value
+                # Si no es una lista, tratar como valor único
                 row_data = [row_data]
 
             for j, value in enumerate(row_data):
@@ -1015,7 +1021,7 @@ def write_sheet_data(ws: Any, start_cell: str, data: List[List[Any]]) -> None:
                 cell.value = value
 
         # ----------------------------------------------------
-        # Auto-fit columns and rows of the written range
+        # Ajuste automático de columnas y filas del rango escrito
         # ----------------------------------------------------
         end_row = start_row + len(data) - 1
         max_len_row = 0
@@ -1035,25 +1041,25 @@ def write_sheet_data(ws: Any, start_cell: str, data: List[List[Any]]) -> None:
             pass
     
     except ValueError as e:
-        raise CellReferenceError(f"Invalid cell reference '{start_cell}': {e}")
+        raise CellReferenceError(f"Referencia de celda inválida '{start_cell}': {e}")
     except Exception as e:
-        raise ExcelMCPError(f"Error writing data: {e}")
+        raise ExcelMCPError(f"Error al escribir datos: {e}")
 
 def append_rows(ws: Any, data: List[List[Any]]) -> None:
     """
-    Append rows at the end with the given values.
-     **Emojis must never be included in text written to cells, labels, titles or Excel charts.**
+    Añade filas al final con los valores dados.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
     
     Args:
-        ws: Openpyxl worksheet object
-        data (List[List]): Values or strings "=FORMULA(...)"
+        ws: Objeto worksheet de openpyxl
+        data (List[List]): Valores o cadenas "=FÓRMULA(...)"
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     if not data or not isinstance(data, list):
-        raise ExcelMCPError("Data must be a non-empty list")
+        raise ExcelMCPError("Los datos deben ser una lista no vacía")
     
     try:
         for row_data in data:
@@ -1064,32 +1070,32 @@ def append_rows(ws: Any, data: List[List[Any]]) -> None:
             ws.append(row_data)
     
     except Exception as e:
-        raise ExcelMCPError(f"Error adding rows: {e}")
+        raise ExcelMCPError(f"Error al añadir filas: {e}")
 
 def update_cell(ws: Any, cell: str, value_or_formula: Any) -> None:
     """
-    Update a single cell.
-     **Emojis must never be included in text written to cells, labels, titles or Excel charts.**
+    Actualiza individualmente una celda.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
     
     Args:
-        ws: Openpyxl worksheet object
-        cell (str): Cell reference (e.g. "A1")
-        value_or_formula: Value or formula to assign
+        ws: Objeto worksheet de openpyxl
+        cell (str): Referencia de celda (e.j. "A1")
+        value_or_formula: Valor o fórmula a asignar
         
     Raises:
-        CellReferenceError: If the cell reference is invalid
+        CellReferenceError: Si la referencia de celda es inválida
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     try:
-        # Assign value to the cell
+        # Asignar valor a la celda
         cell_obj = ws[cell]
         cell_obj.value = value_or_formula
 
         # ----------------------------------------------
-        # Auto-fit if long text is written
+        # Ajuste automático si se escribe texto largo
         # ----------------------------------------------
         if isinstance(value_or_formula, str):
             text = value_or_formula
@@ -1112,12 +1118,12 @@ def update_cell(ws: Any, cell: str, value_or_formula: Any) -> None:
 
 
     except KeyError:
-        raise CellReferenceError(f"Invalid cell reference: '{cell}'")
+        raise CellReferenceError(f"Referencia de celda inválida: '{cell}'")
     except Exception as e:
-        raise ExcelMCPError(f"Error updating cell: {e}")
+        raise ExcelMCPError(f"Error al actualizar celda: {e}")
 
 def autofit_table(ws: Any, cell_range: str) -> None:
-    """Adjust column widths and row heights for a tabular range."""
+    """Ajusta ancho de columnas y alto de filas para un rango tabular."""
     start_row, start_col, end_row, end_col = ExcelRange.parse_range(cell_range)
 
     col_widths: Dict[int, int] = {}
@@ -1155,36 +1161,36 @@ def autofit_table(ws: Any, cell_range: str) -> None:
 
 def apply_style(ws: Any, cell_range: str, style_dict: Dict[str, Any]) -> None:
     """
-    Apply cell styles to a range.
-
+    Aplica estilos de celda a un rango.
+    
     Args:
-        ws: Openpyxl worksheet object.
-        cell_range (str): Range in ``A1:B5`` format or a single cell like ``"A1"``.
-        style_dict (dict): Dictionary with styles to apply:
-            - font_name (str): Font name.
-            - font_size (int): Font size.
-            - bold (bool): Bold text.
-            - italic (bool): Italic text.
-            - fill_color (str): Background color in hex, e.g. ``"FF0000"``.
-            - border_style (str): Border style (``"thin"``, ``"medium"``, ``"thick"``, etc.).
-            - alignment (str): Alignment (``"center"``, ``"left"``, ``"right"``, etc.).
-
+        ws: Objeto worksheet de openpyxl
+        cell_range (str): Rango en formato A1:B5, o una sola celda (e.j. "A1")
+        style_dict (dict): Diccionario con estilos a aplicar:
+            - font_name (str): Nombre de la fuente
+            - font_size (int): Tamaño de la fuente
+            - bold (bool): Negrita
+            - italic (bool): Cursiva
+            - fill_color (str): Color de fondo (formato hex: "FF0000")
+            - border_style (str): Estilo de borde ('thin', 'medium', 'thick', etc.)
+            - alignment (str): Alineación ('center', 'left', 'right', etc.)
+            
     Raises:
-        RangeError: If the range is invalid.
+        RangeError: Si el rango es inválido
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     try:
-        # Parse the range
+        # Parsear el rango
         if ':' in cell_range:
-            # Cell range
+            # Rango de celdas
             start_cell, end_cell = cell_range.split(':')
             start_coord = ws[start_cell].coordinate
             end_coord = ws[end_cell].coordinate
             range_str = f"{start_coord}:{end_coord}"
         else:
-            # A single cell
+            # Una sola celda
             range_str = cell_range
         
         # Preparar los estilos
@@ -1216,13 +1222,13 @@ def apply_style(ws: Any, cell_range: str, style_dict: Dict[str, Any]) -> None:
             alignment_value = style_dict['alignment'].lower()
             horizontal = None
             
-            # Map horizontal alignment values
+            # Mapear valores de alineación horizontal
             if alignment_value in ['left', 'center', 'right', 'justify']:
                 horizontal = alignment_value
             
             alignment = Alignment(horizontal=horizontal)
         
-        # Apply styles to all cells in the range
+        # Aplicar estilos a todas las celdas del rango
         for row in ws[range_str]:
             for cell in row:
                 if font_kwargs:
@@ -1235,82 +1241,82 @@ def apply_style(ws: Any, cell_range: str, style_dict: Dict[str, Any]) -> None:
                     cell.alignment = alignment
     
     except KeyError:
-        raise RangeError(f"Invalid range: '{cell_range}'")
+        raise RangeError(f"Rango inválido: '{cell_range}'")
     except Exception as e:
-        raise ExcelMCPError(f"Error applying styles: {e}")
+        raise ExcelMCPError(f"Error al aplicar estilos: {e}")
 
 def apply_number_format(ws: Any, cell_range: str, fmt: str) -> None:
     """
-    Apply a number format to a range of cells.
-
+    Aplica formato numérico a un rango de celdas.
+    
     Args:
-        ws: Openpyxl worksheet object.
-        cell_range (str): Range in ``A1:B5`` format or a single cell like ``"A1"``.
-        fmt (str): Number format (``"#,##0.00"``, ``"0%"``, ``"dd/mm/yyyy"``, etc.).
-
+        ws: Objeto worksheet de openpyxl
+        cell_range (str): Rango en formato A1:B5, o una sola celda (e.j. "A1")
+        fmt (str): Formato numérico ("#,##0.00", "0%", "dd/mm/yyyy", etc.)
+        
     Raises:
-        RangeError: If the range is invalid.
+        RangeError: Si el rango es inválido
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     try:
-        # Parse the range
+        # Parsear el rango
         if ':' in cell_range:
-            # Cell range
+            # Rango de celdas
             start_cell, end_cell = cell_range.split(':')
             start_coord = ws[start_cell].coordinate
             end_coord = ws[end_cell].coordinate
             range_str = f"{start_coord}:{end_coord}"
         else:
-            # A single cell
+            # Una sola celda
             range_str = cell_range
         
-        # Apply the format to all cells in the range
+        # Aplicar formato a todas las celdas del rango
         for row in ws[range_str]:
             for cell in row:
                 cell.number_format = fmt
     
     except KeyError:
-        raise RangeError(f"Invalid range: '{cell_range}'")
+        raise RangeError(f"Rango inválido: '{cell_range}'")
     except Exception as e:
-        raise ExcelMCPError(f"Error applying number format: {e}")
+        raise ExcelMCPError(f"Error al aplicar formato numérico: {e}")
 
-# 4. Tables and formulas (from advanced_excel_mcp.py)
+# 4. Tablas y fórmulas (de advanced_excel_mcp.py)
 def add_table(ws: Any, table_name: str, cell_range: str, style=None) -> Any:
     """
-    Define a range as a styled table.
-
+    Define un rango como Tabla con estilo.
+    
     Args:
-        ws: Openpyxl worksheet object.
-        table_name (str): Unique name for the table.
-        cell_range (str): Range in ``A1:B5`` format.
-        style (str, optional): Predefined style name or a custom dict.
-
+        ws: Objeto worksheet de openpyxl
+        table_name (str): Nombre único para la tabla
+        cell_range (str): Rango en formato A1:B5
+        style (str, opcional): Nombre de estilo predefinido o dict personalizado
+        
     Returns:
-        The created :class:`Table` object.
-
+        Objeto Table creado
+        
     Raises:
-        TableError: If there is a problem with the table, e.g. duplicate name.
+        TableError: Si hay un problema con la tabla (ej. nombre duplicado)
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     try:
-        # Check if a table with that name already exists
+        # Verificar si ya existe una tabla con ese nombre
         if hasattr(ws, 'tables') and table_name in ws.tables:
-            raise TableError(f"A table named '{table_name}' already exists")
+            raise TableError(f"Ya existe una tabla con el nombre '{table_name}'")
         
-        # Create table object
+        # Crear objeto de tabla
         table = Table(displayName=table_name, ref=cell_range)
         
-        # Apply style
+        # Aplicar estilo
         if style:
             if isinstance(style, dict):
-                # Custom style
+                # Estilo personalizado
                 style_info = TableStyleInfo(**style)
             else:
-                # Predefined style
+                # Estilo predefinido
                 style_info = TableStyleInfo(
                     name=style,
                     showFirstColumn=False,
@@ -1320,11 +1326,11 @@ def add_table(ws: Any, table_name: str, cell_range: str, style=None) -> Any:
                 )
             table.tableStyleInfo = style_info
         
-        # Add table to the sheet
+        # Añadir tabla a la hoja
         ws.add_table(table)
 
         # ------------------------------
-        # Auto-fit table columns and rows
+        # Ajuste automático de columnas y filas de la tabla
         # ------------------------------
         try:
             autofit_table(ws, cell_range)
@@ -1335,45 +1341,45 @@ def add_table(ws: Any, table_name: str, cell_range: str, style=None) -> Any:
     
     except Exception as e:
         if "Duplicate name" in str(e):
-            raise TableError(f"A table named '{table_name}' already exists")
+            raise TableError(f"Ya existe una tabla con el nombre '{table_name}'")
         elif "Invalid coordinate" in str(e) or "Invalid cell" in str(e):
-            raise RangeError(f"Invalid range: '{cell_range}'")
+            raise RangeError(f"Rango inválido: '{cell_range}'")
         else:
-            raise TableError(f"Error adding table: {e}")
+            raise TableError(f"Error al añadir tabla: {e}")
 
 def set_formula(ws: Any, cell: str, formula: str) -> Any:
     """
-    Set a formula in a cell.
-
+    Establece una fórmula en una celda.
+    
     Args:
-        ws: Openpyxl worksheet object.
-        cell (str): Cell reference (e.g. ``"A1"``).
-        formula (str): Excel formula, with or without the ``=`` sign.
-
+        ws: Objeto worksheet de openpyxl
+        cell (str): Referencia de celda (ej. "A1")
+        formula (str): Fórmula Excel, con o sin signo =
+        
     Returns:
-        The updated cell.
-
+        Celda actualizada
+        
     Raises:
-        FormulaError: If there is a problem with the formula.
+        FormulaError: Si hay un problema con la fórmula
     """
     if not ws:
         raise ExcelMCPError("El worksheet no puede ser None")
     
     try:
-        # Add '=' sign if not present
+        # Añadir signo = si no está presente
         if formula and not formula.startswith('='):
             formula = f"={formula}"
         
-        # Set the formula
+        # Establecer la fórmula
         ws[cell] = formula
         return ws[cell]
     
     except KeyError:
-        raise RangeError(f"Invalid cell: '{cell}'")
+        raise RangeError(f"Celda inválida: '{cell}'")
     except Exception as e:
-        raise FormulaError(f"Error setting formula: {e}")
+        raise FormulaError(f"Error al establecer fórmula: {e}")
 
-# 5. Charts and pivot tables (from advanced_excel_mcp.py)
+# 5. Gráficos y tablas dinámicas (de advanced_excel_mcp.py)
 def add_chart(
     wb: Any,
     sheet_name: str,
@@ -1385,58 +1391,61 @@ def add_chart(
     theme=None,
     custom_palette=None,
 ) -> Tuple[int, Any]:
-    """Insert a native chart using the data from the given range.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    """Inserta un gráfico nativo utilizando los datos del rango indicado.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    ``data_range`` should reference a rectangular table with no blank cells in
-    the value area. The first row or first column is interpreted as headers and
-    categories according to :func:`determine_orientation`. All series must
-    contain only numbers and be the same length as the category vector. If total
-    rows or mixed columns exist, the chart may be created incorrectly.
 
-    Validate beforehand that the range belongs to the correct sheet and that
-    headers are present, since the series are added with
-    ``titles_from_data=True``. Categories must not contain blank or duplicate
-    values and numeric columns must not contain text.
+    ``data_range`` debe referirse a una tabla rectangular sin celdas vacías en
+    la zona de valores. La primera fila o la primera columna se interpretan como
+    encabezados y categorías, según determine_orientation. Todas las series deben
+    contener únicamente números y tener la misma longitud que el vector de
+    categorías. Si existen filas de totales o columnas mezcladas, el gráfico
+    podría crearse de forma incorrecta.
+
+    Valida previamente que el rango pertenezca a la hoja correcta y que los
+    encabezados estén presentes, ya que las series se añaden con
+    ``titles_from_data=True``. Las categorías no deben contener valores en blanco
+    ni duplicados, y las columnas numéricas no pueden incluir texto.
 
     Args:
-        wb: Openpyxl ``Workbook`` object.
-        sheet_name: Name of the sheet where the chart will be inserted.
-        chart_type: Chart type (``'column'``, ``'bar'``, ``'line'``, ``'pie'``, etc.).
-        data_range: Data range in ``A1:B5`` format.
-        title: Optional chart title.
-        position: Cell where the chart will be placed (e.g. ``"E5"``).
-        style: Chart style (number ``1``–``48`` or descriptive name).
-        theme: Name of the color theme.
-        custom_palette: List of custom colors.
+        wb: Objeto ``Workbook`` de openpyxl.
+        sheet_name: Nombre de la hoja donde insertar el gráfico.
+        chart_type: Tipo de gráfico (``'column'``, ``'bar'``, ``'line'``,
+            ``'pie'``, etc.).
+        data_range: Rango de datos en formato ``A1:B5``.
+        title: Título opcional del gráfico.
+        position: Celda donde colocar el gráfico (por ejemplo ``"E5"``).
+        style: Estilo del gráfico (número ``1``–``48`` o nombre descriptivo).
+        theme: Nombre del tema de color.
+        custom_palette: Lista de colores personalizados.
 
     Returns:
-        Tuple ``(chart id, chart object)``.
+        Tupla ``(id del gráfico, objeto chart)``.
 
     Raises:
-        ChartError: If a problem occurs while creating the chart.
+        ChartError: Si ocurre un problema al crear el gráfico.
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
     try:
-        # Get the sheet
+        # Obtener la hoja
         ws = get_sheet(wb, sheet_name)
         
-        # Validate and normalize the position
+        # Validar y normalizar la posición
         if position:
-            # If the position is a range, take only the first cell
+            # Si la posición es un rango, tomar solo la primera celda
             if ':' in position:
                 position = position.split(':')[0]
             
-            # Validate that it is a valid cell reference
+            # Validar que es una referencia de celda válida
             try:
-                # Try parsing to verify it is a valid reference
+                # Intentar parsear para verificar que es una referencia válida
                 ExcelRange.parse_cell_ref(position)
             except ValueError:
-                raise ValueError(f"Invalid position '{position}'. Must be a cell reference (e.g. 'E4')")
+                raise ValueError(f"Posición inválida '{position}'. Debe ser una referencia de celda (ej: 'E4')")
         
-        # Create the chart object according to the type
+        # Crear objeto de gráfico según el tipo
         chart = None
         if chart_type.lower() == 'column':
             chart = BarChart()
@@ -1453,46 +1462,46 @@ def add_chart(
         elif chart_type.lower() == 'area':
             chart = AreaChart()
         else:
-            raise ChartError(f"Chart type not supported: '{chart_type}'")
+            raise ChartError(f"Tipo de gráfico no soportado: '{chart_type}'")
         
-        # Set title if provided
+        # Configurar título si se proporciona
         if title:
             chart.title = title
             
-        # Determine if the range references another sheet
+        # Determinar si el rango hace referencia a otra hoja
         data_sheet_name, sr, sc, er, ec = ExcelRange.parse_range_with_sheet(data_range)
         if data_sheet_name is None:
             data_sheet_name = sheet_name
         data_ws = get_sheet(wb, data_sheet_name)
 
-        # Normalize the range for Reference (escaping the sheet name)
+        # Normalizar el rango para Reference (con nombre de hoja escapado)
         if " " in data_sheet_name or any(c in data_sheet_name for c in "![]{}?"):
             sheet_prefix = f"'{data_sheet_name}'!"
         else:
             sheet_prefix = f"{data_sheet_name}!"
         clean_range = ExcelRange.range_to_a1(sr, sc, er, ec)
         
-        # Parse data range
+        # Parsear rango de datos
         try:
-            # Use the previously calculated limits
+            # Usar los límites calculados previamente
             min_row = sr + 1
             min_col = sc + 1
             max_row = er + 1
             max_col = ec + 1
 
-            # Trim empty rows or columns at the end
+            # Recortar filas o columnas vacías al final
             min_row, min_col, max_row, max_col = _trim_range_to_data(data_ws, min_row, min_col, max_row, max_col)
             if max_row < min_row or max_col < min_col:
-                raise ChartError("The specified range contains no data")
+                raise ChartError("El rango indicado no contiene datos")
 
-            # Determine orientation by analyzing the range contents
+            # Determinar orientación analizando el contenido del rango
             is_column_oriented = determine_orientation(data_ws, min_row, min_col, max_row, max_col)
             
-            # For charts that need categories (most except scatter)
+            # Para gráficos que necesitan categorías (la mayoría excepto scatter)
             if chart_type.lower() != 'scatter':
                 if is_column_oriented:
                     if _range_has_blank(data_ws, min_row + 1, min_col + 1, max_row, max_col):
-                        raise ChartError("The data range contains blank cells")
+                        raise ChartError("El rango de datos contiene celdas vacías")
                     categories = Reference(data_ws, min_row=min_row + 1, max_row=max_row, min_col=min_col, max_col=min_col)
                     data = Reference(data_ws, min_row=min_row, max_row=max_row, min_col=min_col + 1, max_col=max_col)
                     try:
@@ -1502,7 +1511,7 @@ def add_chart(
                     chart.set_categories(categories)
                 else:
                     if _range_has_blank(data_ws, min_row + 1, min_col, max_row, max_col):
-                        raise ChartError("The data range contains blank cells")
+                        raise ChartError("El rango de datos contiene celdas vacías")
                     categories = Reference(data_ws, min_row=min_row, max_row=min_row, min_col=min_col, max_col=max_col)
                     data = Reference(data_ws, min_row=min_row + 1, max_row=max_row, min_col=min_col, max_col=max_col)
                     try:
@@ -1512,54 +1521,54 @@ def add_chart(
                     chart.set_categories(categories)
             else:
                 if _range_has_blank(data_ws, min_row, min_col, max_row, max_col):
-                    raise ChartError("The data range contains blank cells")
+                    raise ChartError("El rango de datos contiene celdas vacías")
                 data_ref = Reference(data_ws, min_row=min_row, min_col=min_col, max_row=max_row, max_col=max_col)
                 chart.add_data(data_ref)
         
         except Exception as e:
-            raise RangeError(f"Error processing data range '{data_range}': {e}")
+            raise RangeError(f"Error al procesar rango de datos '{data_range}': {e}")
         
-        # Apply styles
+        # Aplicar estilos
         if style is not None:
-            # Convert specified style (number, name, etc.)
+            # Convertir estilo especificado (número, nombre, etc.)
             style_number = parse_chart_style(style)
             if style_number is not None:
-                # Apply the style including the color palette
+                # Aplicar el estilo incluyendo la paleta de colores
                 apply_chart_style(chart, style_number)
             else:
-                logger.warning(f"Invalid chart style: '{style}'. Using default style.")
+                logger.warning(f"Estilo de gráfico inválido: '{style}'. Se usará estilo predeterminado.")
         
-        # Apply color theme if provided
-        # (here we would use the theme but omit it for simplicity)
+        # Aplicar tema de color si se proporciona
+        # (aquí usaríamos el tema, pero por simplicidad lo omitimos en esta implementación)
         
-        # Apply custom palette if provided
+        # Aplicar paleta personalizada si se proporciona
         if custom_palette and isinstance(custom_palette, list):
             from openpyxl.chart.shapes import GraphicalProperties
             from openpyxl.drawing.fill import ColorChoice
             
             for i, series in enumerate(chart.series):
                 if i < len(custom_palette):
-                    # Ensure graphical properties exist
+                    # Asegurarse de que existen propiedades gráficas
                     if not hasattr(series, 'graphicalProperties'):
                         series.graphicalProperties = GraphicalProperties()
                     elif series.graphicalProperties is None:
                         series.graphicalProperties = GraphicalProperties()
                     
-                    # Assign color ensuring it doesn't have the # prefix
+                    # Asignar color asegurándonos de que no tiene el prefijo #
                     color = custom_palette[i]
                     if isinstance(color, str) and color.startswith('#'):
                         color = color[1:]
                     
-                    # Apply the color explicitly
+                    # Aplicar el color de forma explícita
                     series.graphicalProperties.solidFill = ColorChoice(srgbClr=color)
         
-        # Position the chart on the sheet
+        # Posicionar el gráfico en la hoja
         if position:
             ws.add_chart(chart, position)
         else:
             ws.add_chart(chart)
         
-        # Determine the chart ID (based on its position in the list)
+        # Determinar el ID del gráfico (basado en su posición en la lista)
         chart_id = len(ws._charts) - 1
         
         return chart_id, chart
@@ -1571,215 +1580,216 @@ def add_chart(
     except RangeError:
         raise
     except Exception as e:
-        raise ChartError(f"Error creating chart: {e}")
+        raise ChartError(f"Error al crear gráfico: {e}")
 
-def add_pivot_table(wb: Any, source_sheet: str, source_range: str, target_sheet: str,
+def add_pivot_table(wb: Any, source_sheet: str, source_range: str, target_sheet: str, 
                    target_cell: str, rows: List[str], cols: List[str], data_fields: List[str]) -> Any:
     """
-    Create a pivot table.
-
+    Crea una tabla dinámica.
+    
     Args:
-        wb: Openpyxl workbook object.
-        source_sheet (str): Sheet containing the source data.
-        source_range (str): Range of source data (e.g. ``A1:E10``).
-        target_sheet (str): Sheet where the pivot table will be created.
-        target_cell (str): Anchor cell (e.g. ``"A1"``).
-        rows (list): Row fields.
-        cols (list): Column fields.
-        data_fields (list): Value fields and functions.
-
+        wb: Objeto workbook de openpyxl
+        source_sheet (str): Hoja con datos fuente
+        source_range (str): Rango de datos fuente (A1:E10)
+        target_sheet (str): Hoja donde crear la tabla dinámica
+        target_cell (str): Celda de anclaje (ej. "A1")
+        rows (list): Campos para filas
+        cols (list): Campos para columnas
+        data_fields (list): Campos para valores y funciones
+        
     Returns:
-        The created :class:`PivotTable` object.
-
+        Objeto PivotTable creado
+        
     Raises:
-        PivotTableError: If there are issues with the pivot table.
+        PivotTableError: Si hay problemas con la tabla dinámica
     """
     if not wb:
-        raise ExcelMCPError("Workbook cannot be None")
+        raise ExcelMCPError("El workbook no puede ser None")
     
     try:
-        # Get source sheet
+        # Obtener hoja de origen
         source_ws = get_sheet(wb, source_sheet)
-
-        # Get target sheet
+        
+        # Obtener hoja de destino
         target_ws = get_sheet(wb, target_sheet)
-
-        logger.warning("Pivot tables in openpyxl have limited functionality and may not work as expected.")
-
-        # Try creating the data cache (this is a required step)
+        
+        logger.warning("Las tablas dinámicas en openpyxl tienen funcionalidad limitada y pueden no funcionar como se espera.")
+        
+        # Intentar crear la caché de datos (este es un paso necesario)
         try:
-            # Parse the range
+            # Parsear el rango
             min_row, min_col, max_row, max_col = ExcelRange.parse_range(source_range)
-
-            # Adjust to 1-based for Reference
+            
+            # Ajustar a base 1 para Reference
             min_row += 1
             min_col += 1
             max_row += 1
             max_col += 1
-
-            # Create data reference for the cache
+            
+            # Crear referencia de datos para la caché
             data_reference = Reference(source_ws, min_row=min_row, min_col=min_col,
                                      max_row=max_row, max_col=max_col)
-
-            # Create pivot cache
+            
+            # Crear caché de pivot
             pivot_cache = PivotCache(cacheSource=data_reference, cacheDefinition={'refreshOnLoad': True})
-
-            # Generate a unique ID for the pivot table
+            
+            # Generar un ID único para la tabla dinámica
             pivot_name = f"PivotTable{len(wb._pivots) + 1 if hasattr(wb, '_pivots') else 1}"
-
-            # Create the pivot table
+            
+            # Crear la tabla dinámica
             pivot_table = PivotTable(name=pivot_name, cache=pivot_cache,
                                     location=target_cell, rowGrandTotals=True, colGrandTotals=True)
-
-            # Add row fields
+            
+            # Añadir campos de fila
             for row_field in rows:
                 pivot_table.rowFields.append(PivotField(data=row_field))
-
-            # Add column fields
+            
+            # Añadir campos de columna
             for col_field in cols:
                 pivot_table.colFields.append(PivotField(data=col_field))
-
-            # Add data fields
+            
+            # Añadir campos de datos
             for data_field in data_fields:
                 pivot_table.dataFields.append(PivotField(data=data_field))
-
-            # Add the pivot table to the target sheet
+            
+            # Añadir la tabla dinámica a la hoja de destino
             target_ws.add_pivot_table(pivot_table)
             
             return pivot_table
             
         except Exception as pivot_error:
-            logger.error(f"Error creating pivot table: {pivot_error}")
-            raise PivotTableError(f"Error creating pivot table: {pivot_error}")
+            logger.error(f"Error al crear tabla dinámica: {pivot_error}")
+            raise PivotTableError(f"Error al crear tabla dinámica: {pivot_error}")
     
     except SheetNotFoundError:
         raise
     except PivotTableError:
         raise
     except Exception as e:
-        raise PivotTableError(f"Error creating pivot table: {e}")
+        raise PivotTableError(f"Error al crear tabla dinámica: {e}")
 
 # ----------------------------------------
-# NEW COMBINED HIGH-LEVEL FUNCTIONS
+# NUEVAS FUNCIONES COMBINADAS DE ALTO NIVEL
 # ----------------------------------------
 
-def create_sheet_with_data(wb: Any, sheet_name: str, data: List[List[Any]],
-                           index: Optional[int] = None, overwrite: bool = False) -> Any:
+def create_sheet_with_data(wb: Any, sheet_name: str, data: List[List[Any]], 
+                          index: Optional[int] = None, overwrite: bool = False) -> Any:
     """
-    Create a new sheet and write data in a single step.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Crea una nueva hoja y escribe datos en un solo paso.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
+    
     Args:
-        wb: Openpyxl workbook object.
-        sheet_name (str): Name for the new sheet.
-        data (List[List]): Data to write.
-        index (int, optional): Position of the sheet in the workbook.
-        overwrite (bool): If ``True`` overwrite an existing sheet with the same name.
-
+        wb: Objeto workbook de openpyxl
+        sheet_name (str): Nombre para la nueva hoja
+        data (List[List]): Datos a escribir
+        index (int, opcional): Posición de la hoja en el libro
+        overwrite (bool): Si True, sobrescribe una hoja existente con el mismo nombre
+        
     Returns:
-        The created worksheet object.
-
+        Objeto worksheet creado
+        
     Raises:
-        SheetExistsError: If the sheet already exists and ``overwrite`` is ``False``.
+        SheetExistsError: Si la hoja ya existe y overwrite=False
     """
-    # Handle existing sheet case
+    # Manejar caso de hoja existente
     if sheet_name in list_sheets(wb):
         if overwrite:
-            # Delete the existing sheet
+            # Eliminar la hoja existente
             delete_sheet(wb, sheet_name)
         else:
-            raise SheetExistsError(f"Sheet '{sheet_name}' already exists. Use overwrite=True to overwrite it.")
+            raise SheetExistsError(f"La hoja '{sheet_name}' ya existe. Use overwrite=True para sobrescribirla.")
     
-    # Create new sheet
+    # Crear nueva hoja
     ws = add_sheet(wb, sheet_name, index)
     
-    # Write data
+    # Escribir datos
     if data:
         write_sheet_data(ws, "A1", data)
     
     return ws
 
-def create_formatted_table(wb: Any, sheet_name: str, start_cell: str, data: List[List[Any]],
-                            table_name: str, table_style: Optional[str] = None,
-                            formats: Optional[Dict[str, Union[str, Dict]]] = None) -> Tuple[Any, Any]:
+def create_formatted_table(wb: Any, sheet_name: str, start_cell: str, data: List[List[Any]], 
+                          table_name: str, table_style: Optional[str] = None, 
+                          formats: Optional[Dict[str, Union[str, Dict]]] = None) -> Tuple[Any, Any]:
     """
-    Create a formatted table in a single step.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Crea una tabla con formato en un solo paso.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
+    
     Args:
-        wb: Openpyxl workbook object.
-        sheet_name (str): Name of the sheet where the table will be created.
-        start_cell (str): Starting cell for the data (e.g. ``"A1"``).
-        data (List[List]): Data for the table including headers.
-        table_name (str): Unique name for the table.
-        table_style (str, optional): Predefined table style (e.g. ``"TableStyleMedium9"``).
-        formats (dict, optional): Dictionary of formats to apply:
-            - Keys: Relative ranges (e.g. ``"A2:A10"``) or cells.
-            - Values: Number format or a style dictionary.
-
+        wb: Objeto workbook de openpyxl
+        sheet_name (str): Nombre de la hoja donde crear la tabla
+        start_cell (str): Celda inicial para los datos (ej. "A1")
+        data (List[List]): Datos para la tabla, incluyendo encabezados
+        table_name (str): Nombre único para la tabla
+        table_style (str, opcional): Estilo predefinido para la tabla (ej. "TableStyleMedium9")
+        formats (dict, opcional): Diccionario de formatos a aplicar:
+            - Claves: Rangos relativos (ej. "A2:A10") o celdas
+            - Valores: Formato de número o diccionario de estilos 
+            
     Returns:
-        Tuple ``(table object, worksheet)``.
-
-    Example format::
+        Tupla (objeto tabla, worksheet)
         
+    Ejemplo de formato:
         formats = {
-            "B2:B10": "#,##0.00",  # Currency format
-            "A1:Z1": {"bold": True, "fill_color": "DDEBF7"}  # Header style
+            "B2:B10": "#,##0.00",  # Formato de moneda
+            "A1:Z1": {"bold": True, "fill_color": "DDEBF7"}  # Estilo de encabezado
         }
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # Get data range dimensions
+    # Obtener dimensiones del rango de datos
     rows = len(data)
     cols = max([len(row) if isinstance(row, list) else 1 for row in data], default=0)
     
-    # Write the data
+    # Escribir los datos
     write_sheet_data(ws, start_cell, data)
     
-    # Calculate the full table range
+    # Calcular el rango completo de la tabla
     start_row, start_col = ExcelRange.parse_cell_ref(start_cell)
     end_row = start_row + rows - 1
     end_col = start_col + cols - 1
     full_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
     
-    # Create the table
+    # Crear la tabla
     table = add_table(ws, table_name, full_range, table_style)
     
-    # Apply additional formats if provided
+    # Aplicar formatos adicionales si se proporcionan
     if formats:
         for range_str, format_value in formats.items():
-            # Convert relative range to absolute if needed
+            # Convertir rango relativo a absoluto si es necesario
             if not any(c in range_str for c in [':', '!']):
-                # It's a single cell, add offset
+                # Es una sola celda, añadir offset
                 cell_row, cell_col = ExcelRange.parse_cell_ref(range_str)
                 abs_row = start_row + cell_row
                 abs_col = start_col + cell_col
                 abs_range = ExcelRange.cell_to_a1(abs_row, abs_col)
             elif ':' in range_str and '!' not in range_str:
-                # Range without a specific sheet, add offset
+                # Es un rango sin hoja específica, añadir offset
                 range_start, range_end = range_str.split(':')
                 start_row_rel, start_col_rel = ExcelRange.parse_cell_ref(range_start)
                 end_row_rel, end_col_rel = ExcelRange.parse_cell_ref(range_end)
-
-                # Calculate absolute positions
+                
+                # Calcular posiciones absolutas
                 abs_start_row = start_row + start_row_rel
                 abs_start_col = start_col + start_col_rel
                 abs_end_row = start_row + end_row_rel
                 abs_end_col = start_col + end_col_rel
-
-                # Create absolute range
+                
+                # Crear rango absoluto
                 abs_range = ExcelRange.range_to_a1(abs_start_row, abs_start_col, abs_end_row, abs_end_col)
             else:
-                # It's already an absolute range or includes the sheet
+                # Ya es un rango absoluto o con hoja específica
                 abs_range = range_str
-
-            # Apply format according to type
+            
+            # Aplicar formato según tipo
             if isinstance(format_value, str):
-                # It's a number format
+                # Es un formato numérico
                 apply_number_format(ws, abs_range, format_value)
             elif isinstance(format_value, dict):
-                # It's a style dictionary
+                # Es un diccionario de estilos
                 apply_style(ws, abs_range, format_value)
     
     return table, ws
@@ -1794,36 +1804,40 @@ def create_chart_from_table(
     style: Optional[Any] = None,
     use_headers: bool = True,
 ) -> Tuple[int, Any]:
-    """Generate a chart from an existing table.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    """Genera un gráfico a partir de una tabla existente.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    The table must contain valid headers and must not include total rows. Data
-    cells are assumed to form a rectangular range with no blanks. When
-    ``use_headers`` is ``True`` the first row of the table is used as series
-    titles and categories. All data columns must be numeric and the same length
-    to avoid errors when creating the chart.
 
-    Ensure the table has no blank cells or text columns where numbers are
-    expected. Any mismatch in series length or category count can lead to
-    incomplete or empty charts.
+    La tabla debe contener encabezados válidos y no incluir filas de totales.
+    Se asume que las celdas de datos forman un rango rectangular sin valores en
+    blanco. Cuando ``use_headers`` es ``True`` la primera fila de la tabla se
+    toma como títulos de las series y como categorías. Todas las columnas de
+    datos deben ser numéricas y de igual longitud para evitar errores al crear
+    el gráfico.
+
+    Revisa que la tabla no contenga celdas vacías ni columnas de texto donde se
+    esperan números. Cualquier discrepancia en la longitud de las series o en la
+    cantidad de categorías puede provocar gráficos incompletos o vacíos.
 
     Args:
-        wb: Openpyxl ``Workbook`` object.
-        sheet_name: Name of the sheet containing the table.
-        table_name: Name of the table used as the source.
-        chart_type: Chart type (``'column'``, ``'bar'``, ``'line'``, ``'pie'``, etc.).
-        title: Optional chart title.
-        position: Anchor cell for the chart.
-        style: Chart style (number ``1``–``48`` or descriptive name).
-        use_headers: If ``True`` use the first row as headers and categories.
+        wb: Objeto ``Workbook`` de openpyxl.
+        sheet_name: Nombre de la hoja donde está la tabla.
+        table_name: Nombre de la tabla a utilizar como origen.
+        chart_type: Tipo de gráfico (``'column'``, ``'bar'``, ``'line'``, ``'pie'``,
+            etc.).
+        title: Título opcional del gráfico.
+        position: Celda de anclaje para el gráfico.
+        style: Estilo del gráfico (número ``1``–``48`` o nombre descriptivo).
+        use_headers: Si ``True`` toma la primera fila como encabezados y
+            categorías.
 
     Returns:
-        Tuple ``(chart ID, chart object)``.
+        Tupla ``(ID del gráfico, objeto gráfico)``.
     """
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # Get table information
+    # Obtener información de la tabla
     tables = list_tables(wb, sheet_name)
     table_info = None
     for table in tables:
@@ -1832,12 +1846,12 @@ def create_chart_from_table(
             break
     
     if not table_info:
-        raise TableError(f"Table '{table_name}' not found in sheet '{sheet_name}'")
+        raise TableError(f"No se encontró la tabla '{table_name}' en la hoja '{sheet_name}'")
     
-    # Use the table range to create the chart
+    # Usar el rango de la tabla para crear el gráfico
     table_range = table_info['ref']
     
-    # Create the chart
+    # Crear el gráfico
     chart_id, chart = add_chart(wb, sheet_name, chart_type, table_range, 
                                title, position, style)
     
@@ -1855,50 +1869,55 @@ def create_chart_from_data(
     table_name: Optional[str] = None,
     table_style: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Create a chart from ``data`` by writing the values first.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    """Crea un gráfico a partir de ``data`` escribiendo primero los datos.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    ``data`` must be a list of lists forming a rectangular structure with no
-    empty cells. The first row or column is interpreted as headers and
-    categories; therefore every row must have the same length and numeric columns
-    should not contain text. Avoid including total rows or records that should
-    not be charted.
 
-    Before calling the function check for blank cells, duplicated headers or
-    mismatched lengths between categories and series. ``add_chart`` uses
-    ``titles_from_data=True`` to assign the series names. If the series are
-    inconsistent the resulting chart may be incomplete or show errors.
+    ``data`` debe ser una lista de listas con una estructura rectangular y sin
+    celdas vacías. La primera fila o columna se interpreta como encabezados y
+    categorías; por ello todas las filas deben tener la misma longitud y las
+    columnas numéricas no deben contener texto. Evita incluir filas de totales o
+    registros que no deban graficarse.
+
+    Antes de llamar a la función verifica que no existan celdas en blanco,
+    encabezados duplicados ni longitudes desiguales entre categorías y series.
+    ``add_chart`` utilizará ``titles_from_data=True`` para asignar los nombres de
+    serie. Si las series no son coherentes, el gráfico resultante podría quedar
+    incompleto o mostrar errores.
 
     Args:
-        wb: Openpyxl ``Workbook`` object.
-        sheet_name: Name of the sheet where the chart will be created.
-        data: Data matrix including the headers.
-        chart_type: Chart type (``'column'``, ``'bar'``, ``'line'``, ``'pie'``, etc.).
-        position: Cell where to place the chart.
-        title: Chart title.
-        style: Chart style (number ``1``–``48`` or descriptive name).
-        create_table: If ``True`` a table with the written data will be created.
-        table_name: Name of the table (required if ``create_table`` is ``True``).
-        table_style: Optional table style.
+        wb: Objeto ``Workbook`` de openpyxl.
+        sheet_name: Nombre de la hoja donde crear el gráfico.
+        data: Matriz de datos que incluye los encabezados.
+        chart_type: Tipo de gráfico (``'column'``, ``'bar'``, ``'line'``,
+            ``'pie'``, etc.).
+        position: Celda donde colocar el gráfico.
+        title: Título del gráfico.
+        style: Estilo del gráfico (número ``1``–``48`` o nombre descriptivo).
+        create_table: Si ``True`` crea una tabla con los datos escritos.
+        table_name: Nombre de la tabla (obligatorio si ``create_table`` es
+            ``True``).
+        table_style: Estilo opcional para la tabla.
 
     Returns:
-        Dictionary with information about the chart and, if created, the table.
+        Diccionario con información del gráfico y, en su caso, de la tabla
+        creada.
     """
-    # Create sheet if it does not exist
+    # Crear hoja si no existe
     if sheet_name not in list_sheets(wb):
         add_sheet(wb, sheet_name)
     
-    # Get the sheet
+    # Obtener la hoja
     ws = get_sheet(wb, sheet_name)
     
-    # Determine a suitable location for the data
-    # By default, place the data at A1
+    # Determinar una ubicación adecuada para los datos
+    # Por defecto, colocar los datos en A1
     data_start_cell = "A1"
     
-    # Write the data
+    # Escribir los datos
     write_sheet_data(ws, data_start_cell, data)
     
-    # Calculate the full data range
+    # Calcular el rango completo de los datos
     rows = len(data)
     cols = max([len(row) if isinstance(row, list) else 1 for row in data], default=0)
     start_row, start_col = ExcelRange.parse_cell_ref(data_start_cell)
@@ -1912,11 +1931,11 @@ def create_chart_from_data(
         "columns": cols
     }
     
-    # Create table if requested
+    # Crear tabla si se solicita
     if create_table:
         if not table_name:
-            # Generate table name if not provided
-            table_name = f"Table_{sheet_name}_{int(time.time())}"
+            # Generar nombre de tabla si no se proporciona
+            table_name = f"Tabla_{sheet_name}_{int(time.time())}"
             
         try:
             table = add_table(ws, table_name, data_range, table_style)
@@ -1926,9 +1945,9 @@ def create_chart_from_data(
                 "style": table_style
             }
         except Exception as e:
-            logger.warning(f"Could not create the table: {e}")
+            logger.warning(f"No se pudo crear la tabla: {e}")
     
-    # Create the chart
+    # Crear el gráfico
     try:
         chart_id, chart = add_chart(wb, sheet_name, chart_type, data_range, 
                                   title, position, style)
@@ -1941,8 +1960,8 @@ def create_chart_from_data(
             "style": style
         }
     except Exception as e:
-        logger.error(f"Error creating chart: {e}")
-        raise ChartError(f"Error creating chart: {e}")
+        logger.error(f"Error al crear gráfico: {e}")
+        raise ChartError(f"Error al crear gráfico: {e}")
 
     return result
 
@@ -1958,35 +1977,39 @@ def create_chart_from_dataframe(
     table_name: Optional[str] = None,
     table_style: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Generate a chart from a ``pandas.DataFrame``.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    """Genera un gráfico a partir de un ``DataFrame`` de pandas.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    The ``DataFrame`` must contain numeric columns without missing values in the
-    series and should not include total rows. The headers are used as series
-    titles, so duplicates or blank cells should be avoided. The contents of the
-    ``DataFrame`` are written to the sheet and delegated to
-    :func:`create_chart_from_data`, therefore the same validation rules apply.
+
+    El ``DataFrame`` debe contener columnas numéricas sin valores faltantes en
+    las series y no incluir filas de totales. Los encabezados se utilizan como
+    títulos de las series, por lo que es importante que no haya duplicados ni
+    celdas en blanco. El contenido del ``DataFrame`` se escribe en la hoja y se
+    delega a :func:`create_chart_from_data`, por lo que aplican las mismas
+    recomendaciones sobre validación previa.
 
     Args:
-        wb: Openpyxl ``Workbook`` object.
-        sheet_name: Name of the sheet where the chart will be created.
-        df: Data in ``pandas.DataFrame`` format.
-        chart_type: Chart type (``'column'``, ``'bar'``, ``'line'``, ``'pie'``, etc.).
-        position: Anchor cell for the chart.
-        title: Chart title.
-        style: Optional chart style.
-        create_table: If ``True`` create a table with the written data.
-        table_name: Name of the table to create.
-        table_style: Table style.
+        wb: Objeto ``Workbook`` de openpyxl.
+        sheet_name: Nombre de la hoja donde crear el gráfico.
+        df: Datos en formato ``pandas.DataFrame``.
+        chart_type: Tipo de gráfico (``'column'``, ``'bar'``, ``'line'``,
+            ``'pie'``, etc.).
+        position: Celda de anclaje para el gráfico.
+        title: Título del gráfico.
+        style: Estilo opcional del gráfico.
+        create_table: Si ``True`` crea una tabla con los datos escritos.
+        table_name: Nombre de la tabla a crear.
+        table_style: Estilo de la tabla.
 
     Returns:
-        Dictionary with information about the chart and, if created, the table.
+        Diccionario con información del gráfico y, en su caso, de la tabla
+        generada.
     """
 
     if df is None:
-        raise ExcelMCPError("The provided DataFrame is None")
+        raise ExcelMCPError("El DataFrame proporcionado es None")
 
-    # Convert the DataFrame to a list of lists including headers
+    # Convertir el DataFrame a lista de listas incluyendo encabezados
     data = [df.columns.tolist()] + df.values.tolist()
 
     return create_chart_from_data(
@@ -2006,30 +2029,32 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
                  charts: Optional[Dict[str, Dict[str, Any]]] = None, formats: Optional[Dict[str, Dict[str, Any]]] = None,
                  overwrite_sheets: bool = False) -> Dict[str, Any]:
     """
-    Create a full report with multiple sheets, tables and charts in a single step.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Crea un informe completo con múltiples hojas, tablas y gráficos en un solo paso.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    This function acts as a generic template for automated report generators.
-    All created sheets should be orderly and styled. Check the available space
-    before inserting charts so they do not end up on top of any table or block
-    of text. After creating a table, verify which column contains the longest
-    strings and adjust its width so the content is visible without manual
-    editing.
+
+    Esta función sirve como plantilla general para generadores automáticos de
+    informes. Todas las hojas creadas deben quedar ordenadas y con estilos
+    aplicados. Se recomienda verificar el espacio libre antes de insertar
+    gráficos para que no queden encima de ninguna tabla o bloque de texto. Tras
+    crear una tabla, comprueba qué columna tiene cadenas más largas y ajusta su
+    ancho para que el contenido sea visible sin necesidad de editar manualmente
+    el archivo.
 
     Args:
-        wb: Openpyxl workbook object.
-        data: Dictionary with data per sheet: ``{"Sheet1": [[data]], "Sheet2": [[data]]}``
-        tables: Dictionary with table configuration:
-            ``{"SalesTable": {"sheet": "Sales", "range": "A1:B10", "style": "TableStyleMedium9"}}``
-        charts: Dictionary with chart configuration:
-            ``{"SalesChart": {"sheet": "Sales", "type": "column", "data": "SalesTable",
-                              "title": "Sales", "position": "D2", "style": "dark-blue"}}``
-        formats: Dictionary of formats to apply:
-            ``{"Sales": {"B2:B10": "#,##0.00", "A1:Z1": {"bold": True}}}``
-        overwrite_sheets: If ``True`` overwrite existing sheets.
-
+        wb: Objeto workbook de openpyxl
+        data: Diccionario con datos por hoja: {"Hoja1": [[datos]], "Hoja2": [[datos]]}
+        tables: Diccionario de configuración de tablas:
+            {"TablaVentas": {"sheet": "Ventas", "range": "A1:B10", "style": "TableStyleMedium9"}}
+        charts: Diccionario de configuración de gráficos:
+            {"GraficoVentas": {"sheet": "Ventas", "type": "column", "data": "TablaVentas", 
+                              "title": "Ventas", "position": "D2", "style": "dark-blue"}}
+        formats: Diccionario de formatos a aplicar:
+            {"Ventas": {"B2:B10": "#,##0.00", "A1:Z1": {"bold": True}}}
+        overwrite_sheets: Si True, sobrescribe hojas existentes
+        
     Returns:
-        Dictionary with information about the created elements.
+        Diccionario con información de los elementos creados
     """
     result = {
         "sheets": [],
@@ -2037,16 +2062,16 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
         "charts": []
     }
     
-    # Create/update sheets with data
+    # Crear/actualizar hojas con datos
     for sheet_name, sheet_data in data.items():
         if sheet_name in list_sheets(wb):
             if overwrite_sheets:
-                # Use the existing sheet
+                # Usar la hoja existente
                 ws = wb[sheet_name]
-                # Write the data
+                # Escribir los datos
                 write_sheet_data(ws, "A1", sheet_data)
             else:
-                # Add numeric suffix if the sheet already exists
+                # Añadir sufijo numérico si la hoja ya existe
                 base_name = sheet_name
                 counter = 1
                 while f"{base_name}_{counter}" in list_sheets(wb):
@@ -2055,12 +2080,12 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
                 ws = create_sheet_with_data(wb, new_name, sheet_data)
                 sheet_name = new_name
         else:
-            # Create new sheet
+            # Crear nueva hoja
             ws = create_sheet_with_data(wb, sheet_name, sheet_data)
         
         result["sheets"].append({"name": sheet_name, "rows": len(sheet_data)})
         
-        # Apply specific formats for this sheet
+        # Aplicar formatos específicos para esta hoja
         if formats and sheet_name in formats:
             for range_str, format_value in formats[sheet_name].items():
                 if isinstance(format_value, str):
@@ -2076,13 +2101,13 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
             style = table_config.get("style")
             
             if not sheet_name or not range_str:
-                logger.warning(f"Incomplete configuration for table '{table_name}'. Sheet and range are required.")
+                logger.warning(f"Configuración incompleta para tabla '{table_name}'. Se requiere sheet y range.")
                 continue
             
             try:
-                # Verify that the sheet exists
+                # Verificar que la hoja existe
                 if sheet_name not in list_sheets(wb):
-                    logger.warning(f"Sheet '{sheet_name}' not found for table '{table_name}'. Skipping.")
+                    logger.warning(f"Hoja '{sheet_name}' no encontrada para la tabla '{table_name}'. Omitiendo.")
                     continue
                 
                 ws = wb[sheet_name]
@@ -2095,7 +2120,7 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
                     "style": style
                 })
                 
-                # Apply specific formats for this table
+                # Aplicar formatos específicos para esta tabla
                 if "formats" in table_config:
                     for range_str, format_value in table_config["formats"].items():
                         if isinstance(format_value, str):
@@ -2106,7 +2131,7 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
             except Exception as e:
                 logger.warning(f"Error al crear tabla '{table_name}': {e}")
     
-    # Create charts
+    # Crear gráficos
     if charts:
         for chart_name, chart_config in charts.items():
             sheet_name = chart_config.get("sheet")
@@ -2117,13 +2142,13 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
             style = chart_config.get("style")
             
             if not sheet_name or not chart_type or not data_source:
-                logger.warning(f"Incomplete configuration for chart '{chart_name}'. Sheet, type and data are required.")
+                logger.warning(f"Configuración incompleta para gráfico '{chart_name}'. Se requiere sheet, type y data.")
                 continue
             
             try:
                 # Verificar que la hoja existe
                 if sheet_name not in list_sheets(wb):
-                    logger.warning(f"Sheet '{sheet_name}' not found for chart '{chart_name}'. Skipping.")
+                    logger.warning(f"Hoja '{sheet_name}' no encontrada para el gráfico '{chart_name}'. Omitiendo.")
                     continue
                 
                 # Determinar si data_source es una tabla o un rango
@@ -2135,7 +2160,7 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
                             data_range = table["range"]
                             break
                 
-                # Create the chart
+                # Crear el gráfico
                 chart_id, chart = add_chart(wb, sheet_name, chart_type, data_range, 
                                            title, position, style)
                 
@@ -2150,34 +2175,35 @@ def create_report(wb: Any, data: Dict[str, List[List[Any]]], tables: Optional[Di
                 })
             
             except Exception as e:
-                logger.warning(f"Error creating chart '{chart_name}': {e}")
+                logger.warning(f"Error al crear gráfico '{chart_name}': {e}")
     
     return result
 
 def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                     create_new: bool = True) -> Dict[str, Any]:
     """
-    Create a complete dashboard with tables, charts and interactive filters.
+    Crea un dashboard completo con tablas, gráficos y filtros interactivos.
 
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-    It is intended for an automated agent to build an attractive sheet without
-    overlaps. Each chart should be placed with space from previous tables or
-    text. After writing the data for each section check the column widths and
-    enlarge them when some cell is particularly long so the sheet remains easy
-    to read without manual editing.
+    Está pensado para que un agente automático construya una hoja atractiva y
+    sin solapamientos. Coloca cada gráfico dejando espacio respecto a tablas o
+    textos previos. Tras escribir los datos de cada sección revisa el tamaño de
+    las columnas y amplíalas cuando alguna celda sea especialmente larga. De esa
+    forma se garantiza que la lectura sea cómoda sin modificar manualmente el
+    archivo.
 
     Args:
-        wb: Openpyxl workbook object.
-        dashboard_config: Dictionary with the complete dashboard configuration
+        wb: Objeto workbook de openpyxl
+        dashboard_config: Diccionario con configuración completa del dashboard
             {
-                "title": "Sales Dashboard",
+                "title": "Dashboard de Ventas",
                 "sheet": "Dashboard",
-                "data_sheet": "Data",
-                "data": [[data]],
+                "data_sheet": "Datos",
+                "data": [[datos]],
                 "sections": [
                     {
-                        "title": "Sales by Region",
+                        "title": "Ventas por Región",
                         "type": "chart",
                         "chart_type": "column",
                         "data_range": "A1:B10",
@@ -2185,20 +2211,20 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                         "style": "dark-blue"
                     },
                     {
-                        "title": "Product Table",
+                        "title": "Tabla de Productos",
                         "type": "table",
                         "data_range": "D1:F10",
-                        "name": "ProductTable",
+                        "name": "TablaProductos",
                         "style": "TableStyleMedium9"
                     }
                 ]
             }
-        create_new: If ``True`` create a new sheet for the dashboard.
-
+        create_new: Si True, crea una nueva hoja para el dashboard
+        
     Returns:
-        Dictionary with information about the created elements.
+        Diccionario con información de los elementos creados
     """
-    # Basic configuration
+    # Configuración básica
     title = dashboard_config.get("title", "Dashboard")
     sheet_name = dashboard_config.get("sheet", "Dashboard")
     data_sheet = dashboard_config.get("data_sheet")
@@ -2213,7 +2239,7 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
     # Crear o usar la hoja del dashboard
     if sheet_name in list_sheets(wb):
         if create_new:
-            # Add numeric suffix
+            # Añadir sufijo numérico
             base_name = sheet_name
             counter = 1
             while f"{base_name}_{counter}" in list_sheets(wb):
@@ -2233,8 +2259,8 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
         if data_sheet in list_sheets(wb):
             # Usar la hoja existente
             data_ws = wb[data_sheet]
-            # Clear existing data
-            # (This could be improved to avoid deleting everything)
+            # Limpiar datos existentes
+            # (Esto podría mejorarse para no borrar todo)
             max_row = data_ws.max_row
             max_col = data_ws.max_column
             for row in range(1, max_row + 1):
@@ -2248,7 +2274,7 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
         write_sheet_data(data_ws, "A1", data)
         result["data_sheet"] = data_sheet
     
-    # Add title to the dashboard
+    # Añadir título al dashboard
     update_cell(ws, "A1", title)
     apply_style(ws, "A1", {
         "font_size": 16,
@@ -2258,23 +2284,23 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
     
 
     
-    # Space after the title
+    # Espacio después del título
     current_row = 3
     
-    # Process dashboard sections
+    # Procesar secciones del dashboard
     sections = dashboard_config.get("sections", [])
     for i, section in enumerate(sections):
         section_type = section.get("type")
-        section_title = section.get("title", f"Section {i+1}")
+        section_title = section.get("title", f"Sección {i+1}")
         
-        # Information for the result
+        # Información para el resultado
         section_result = {
             "title": section_title,
             "type": section_type,
             "row": current_row
         }
         
-        # Add section title
+        # Añadir título de sección
         update_cell(ws, f"A{current_row}", section_title)
         apply_style(ws, f"A{current_row}", {
             "font_size": 12,
@@ -2282,12 +2308,12 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
         })
         current_row += 1
         
-        # Process according to the section type
+        # Procesar según el tipo de sección
         if section_type == "chart":
             chart_type = section.get("chart_type", "column")
             data_range = section.get("data_range")
             
-            # If the range has no specific sheet, use the data sheet
+            # Si el rango no tiene hoja específica, usar la hoja de datos
             if data_range and '!' not in data_range and data_sheet:
                 if ' ' in data_sheet or any(c in data_sheet for c in "![]{}?"):
                     data_range = f"'{data_sheet}'!{data_range}"
@@ -2305,19 +2331,19 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                 section_result["chart_id"] = chart_id
                 section_result["data_range"] = data_range
                 
-                # Move down rows according to position and estimated chart size
-                # (this is a simple estimate)
+                # Avanzar filas según la posición y tamaño estimado del gráfico
+                # (esto es una estimación simple)
                 current_row += 15
             except Exception as e:
-                logger.warning(f"Error creating chart in section '{section_title}': {e}")
-                current_row += 2  # Move down a few rows in case of error
+                logger.warning(f"Error al crear gráfico en sección '{section_title}': {e}")
+                current_row += 2  # Avanzar unas pocas filas en caso de error
         
         elif section_type == "table":
             table_range = section.get("data_range")
-            table_name = section.get("name", f"Table_{i}")
+            table_name = section.get("name", f"Tabla_{i}")
             table_style = section.get("style")
             
-            # If the range has no specific sheet, use the data sheet
+            # Si el rango no tiene hoja específica, usar la hoja de datos
             if table_range and '!' not in table_range and data_sheet:
                 if ' ' in data_sheet or any(c in data_sheet for c in "![]{}?"):
                     full_table_range = f"'{data_sheet}'!{table_range}"
@@ -2327,26 +2353,26 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                 full_table_range = table_range
                 
             try:
-                # Extract table data to display on the dashboard
+                # Extraer datos de la tabla para mostrarlos en el dashboard
                 if data_sheet:
                     source_ws = wb[data_sheet]
-                    # Extract range without sheet name
+                    # Extraer rango sin nombre de hoja
                     if '!' in table_range:
                         pure_range = table_range.split('!')[1]
                     else:
                         pure_range = table_range
                     
-                    # Read data from the source
+                    # Leer datos de la fuente
                     table_data = read_sheet_data(wb, data_sheet, pure_range)
                     
-                    # Determine dimensions
+                    # Determinar dimensiones
                     table_rows = len(table_data)
                     table_cols = max([len(row) if isinstance(row, list) else 1 for row in table_data], default=0)
                     
-                    # Write data on the dashboard
+                    # Escribir datos en el dashboard
                     write_sheet_data(ws, f"A{current_row}", table_data)
                     
-                    # Create local table on the dashboard
+                    # Crear tabla local en el dashboard
                     local_range = f"A{current_row}:{get_column_letter(table_cols)}:{current_row + table_rows - 1}"
                     table = add_table(ws, table_name, local_range, table_style)
                     
@@ -2354,7 +2380,7 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                     section_result["source_range"] = full_table_range
                     section_result["dashboard_range"] = local_range
                     
-                    # Move down rows according to table size
+                    # Avanzar filas según tamaño de tabla
                     current_row += table_rows + 2
                 else:
                     # Si no hay hoja de datos, crear tabla directamente en el dashboard
@@ -2368,9 +2394,9 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
                         min_row, min_col, max_row, max_col = ExcelRange.parse_range(table_range)
                         current_row += (max_row - min_row) + 3
                     except:
-                        current_row += 10  # Default value if calculation fails
+                        current_row += 10  # Valor por defecto si falla el cálculo
             except Exception as e:
-                logger.warning(f"Error creating table in section '{section_title}': {e}")
+                logger.warning(f"Error al crear tabla en sección '{section_title}': {e}")
                 current_row += 2
         
         elif section_type == "text":
@@ -2389,32 +2415,34 @@ def create_dashboard(wb: Any, dashboard_config: Dict[str, Any],
             
             current_row += 2
         
-        # Add the section to the result
+        # Añadir la sección al resultado
         result["sections"].append(section_result)
         
-        # Space between sections
+        # Espacio entre secciones
         current_row += 1
     
     return result
 
 def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Apply a predefined template to an Excel workbook.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Aplica una plantilla predefinida a un libro de Excel.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
+    
     Args:
-        wb: Openpyxl workbook object.
-        template_name (str): Name of the template to apply (e.g. ``"sales_report"``, ``"dashboard"``).
-        data: Dictionary with data specific to the template.
 
+        wb: Objeto workbook de openpyxl
+        template_name (str): Nombre de la plantilla a aplicar (ej. "informe_ventas", "dashboard")
+        data: Diccionario con datos específicos para la plantilla
+        
     Returns:
-        Dictionary with information about the created elements.
-
-    Available templates:
-        - ``"basic_report"``: Basic report with table and chart.
-        - ``"financial_dashboard"``: Financial dashboard with multiple KPIs and charts.
-        - ``"sales_analysis"``: Sales analysis by region and product.
-        - ``"project_tracker"``: Project tracker with progress tables and charts.
+        Diccionario con información de los elementos creados
+    
+    Plantillas disponibles:
+        - "basic_report": Informe básico con tabla y gráfico
+        - "financial_dashboard": Dashboard financiero con múltiples KPIs y gráficos
+        - "sales_analysis": Análisis de ventas por región y producto
+        - "project_tracker": Seguimiento de proyectos con tablas y gráficos de progreso
     """
     result = {
         "template": template_name,
@@ -2422,13 +2450,13 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
         "elements": []
     }
     
-    # Implementation of predefined templates
+    # Implementación de plantillas predefinidas
     if template_name == "basic_report":
-        # Basic report template
-        title = data.get("title", "Basic Report")
+        # Plantilla de informe básico
+        title = data.get("title", "Informe Básico")
         subtitle = data.get("subtitle", "")
         report_date = data.get("date", time.strftime("%d/%m/%Y"))
-        sheet_name = data.get("sheet", "Report")
+        sheet_name = data.get("sheet", "Informe")
         report_data = data.get("data", [])
         
         # Crear hoja para el informe si no existe
@@ -2437,7 +2465,7 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
         else:
             ws = wb[sheet_name]
         
-        # Title and basic information
+        # Título e información básica
         update_cell(ws, "A1", title)
         apply_style(ws, "A1", {
             "font_size": 16,
@@ -2465,7 +2493,7 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
             
             # Crear tabla
             table_range = f"A{start_row}:{get_column_letter(cols)}{start_row + rows - 1}"
-            table_name = data.get("table_name", "ReportTable")
+            table_name = data.get("table_name", "TablaInforme")
             table_style = data.get("table_style", "TableStyleMedium9")
             
             try:
@@ -2478,10 +2506,10 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
             except Exception as e:
                 logger.warning(f"Error al crear tabla: {e}")
             
-            # Create chart
+            # Crear gráfico
             chart_type = data.get("chart_type", "column")
             chart_position = data.get("chart_position", f"G{start_row}")
-            chart_title = data.get("chart_title", "Report Chart")
+            chart_title = data.get("chart_title", "Gráfico del Informe")
             chart_style = data.get("chart_style", "colorful-1")
             
             try:
@@ -2494,34 +2522,34 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
                     "position": chart_position
                 })
             except Exception as e:
-                logger.warning(f"Error creating chart: {e}")
+                logger.warning(f"Error al crear gráfico: {e}")
         
         result["sheets"].append({"name": sheet_name, "type": "report"})
     
     elif template_name == "financial_dashboard":
-        # More advanced template for a financial dashboard
-        title = data.get("title", "Financial Dashboard")
+        # Template más avanzado para dashboard financiero
+        title = data.get("title", "Dashboard Financiero")
         sheet_name = data.get("sheet", "Dashboard")
         financial_data = data.get("financial_data", {})
         
-        # Configuration to create the full dashboard
+        # Configuración para crear el dashboard completo
         dashboard_config = {
             "title": title,
             "sheet": sheet_name,
             "sections": []
         }
         
-        # 1. Financial KPI section
+        # 1. Sección de KPIs financieros
         if "kpis" in financial_data:
             kpis = financial_data["kpis"]
             kpi_section = {
-                "title": "Key Financial Indicators",
+                "title": "Indicadores Financieros Clave",
                 "type": "text",
-                "content": "Financial KPIs"
+                "content": "KPIs Financieros"
             }
             dashboard_config["sections"].append(kpi_section)
-
-            # Each KPI could be added as text or a formatted cell
+            
+            # Cada KPI se podría añadir como texto o celda con formato
             for kpi_name, kpi_value in kpis.items():
                 kpi_section = {
                     "title": kpi_name,
@@ -2534,11 +2562,11 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
                 }
                 dashboard_config["sections"].append(kpi_section)
         
-        # 2. Financial charts section
+        # 2. Sección de gráficos financieros
         if "charts" in financial_data:
             for chart_config in financial_data["charts"]:
                 chart_section = {
-                    "title": chart_config.get("title", "Financial Chart"),
+                    "title": chart_config.get("title", "Gráfico Financiero"),
                     "type": "chart",
                     "chart_type": chart_config.get("type", "column"),
                     "data_range": chart_config.get("data_range", ""),
@@ -2547,30 +2575,30 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
                 }
                 dashboard_config["sections"].append(chart_section)
         
-        # 3. Data tables section
+        # 3. Sección de tablas de datos
         if "tables" in financial_data:
             for table_config in financial_data["tables"]:
                 table_section = {
-                    "title": table_config.get("title", "Financial Table"),
+                    "title": table_config.get("title", "Tabla Financiera"),
                     "type": "table",
                     "data_range": table_config.get("data_range", ""),
-                    "name": table_config.get("name", "FinanceTable"),
+                    "name": table_config.get("name", "TablaFinanzas"),
                     "style": table_config.get("style", "TableStyleMedium9")
                 }
                 dashboard_config["sections"].append(table_section)
         
-        # Create the dashboard
+        # Crear el dashboard
         dashboard_result = create_dashboard(wb, dashboard_config)
         
-        # Add result
+        # Añadir resultado
         result["sheets"].append({"name": sheet_name, "type": "dashboard"})
         result["dashboard"] = dashboard_result
     
     elif template_name == "sales_analysis":
-        # Template for sales analysis
-        title = data.get("title", "Sales Analysis")
+        # Template para análisis de ventas
+        title = data.get("title", "Análisis de Ventas")
         sheet_data = data.get("sales_data", [])
-        sheet_name = data.get("sheet", "Sales")
+        sheet_name = data.get("sheet", "Ventas")
         
         # Crear hoja de datos si no existe
         data_sheet = f"{sheet_name}_Datos"
@@ -2589,23 +2617,23 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
             data_range = f"A1:{get_column_letter(cols)}{rows}"
             
             try:
-                table = add_table(data_ws, "SalesDataTable", data_range, "TableStyleMedium9")
+                table = add_table(data_ws, "TablaDatosVentas", data_range, "TableStyleMedium9")
                 result["elements"].append({
                     "type": "table",
-                    "name": "SalesDataTable",
+                    "name": "TablaDatosVentas",
                     "sheet": data_sheet,
                     "range": data_range
                 })
             except Exception as e:
                 logger.warning(f"Error al crear tabla de datos: {e}")
         
-        # Create analysis sheet
+        # Crear hoja de análisis
         if sheet_name not in list_sheets(wb):
             ws = add_sheet(wb, sheet_name)
         else:
             ws = wb[sheet_name]
         
-        # Analysis title
+        # Título del análisis
         update_cell(ws, "A1", title)
         apply_style(ws, "A1", {
             "font_size": 16,
@@ -2615,81 +2643,81 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
         
 
             
-        # Create analysis sections according to the data structure
+        # Crear secciones de análisis según la estructura de los datos
         current_row = 3
         
-        # 1. Sales by Region (assuming there is a region column)
-        update_cell(ws, f"A{current_row}", "Sales by Region")
+        # 1. Ventas por Región (suponiendo que hay una columna de región)
+        update_cell(ws, f"A{current_row}", "Ventas por Región")
         apply_style(ws, f"A{current_row}", {"bold": True, "font_size": 12})
         current_row += 1
         
         try:
-            # Create chart for sales by region
-            chart_id, chart = add_chart(wb, sheet_name, "column",
-                                       f"{data_sheet}!A1:{get_column_letter(cols)}{rows}",
-                                       "Sales by Region", f"A{current_row}", "colorful-1")
+            # Crear gráfico para ventas por región
+            chart_id, chart = add_chart(wb, sheet_name, "column", 
+                                       f"{data_sheet}!A1:{get_column_letter(cols)}{rows}", 
+                                       "Ventas por Región", f"A{current_row}", "colorful-1")
             
             result["elements"].append({
                 "type": "chart",
-                "name": "SalesByRegionChart",
+                "name": "GraficoVentasRegion",
                 "sheet": sheet_name,
                 "id": chart_id
             })
             
-            current_row += 15  # Space for the chart
+            current_row += 15  # Espacio para el gráfico
         except Exception as e:
-            logger.warning(f"Error creating sales by region chart: {e}")
+            logger.warning(f"Error al crear gráfico de ventas por región: {e}")
             current_row += 2
         
-        # 2. Sales Trend (if there is time data)
-        update_cell(ws, f"A{current_row}", "Sales Trend")
+        # 2. Tendencia de Ventas (si hay datos temporales)
+        update_cell(ws, f"A{current_row}", "Tendencia de Ventas")
         apply_style(ws, f"A{current_row}", {"bold": True, "font_size": 12})
         current_row += 1
         
         try:
-            # Create chart for sales trend
-            chart_id, chart = add_chart(wb, sheet_name, "line",
-                                       f"{data_sheet}!A1:{get_column_letter(cols)}{rows}",
-                                       "Sales Trend", f"A{current_row}", "line-markers")
+            # Crear gráfico para tendencia de ventas
+            chart_id, chart = add_chart(wb, sheet_name, "line", 
+                                       f"{data_sheet}!A1:{get_column_letter(cols)}{rows}", 
+                                       "Tendencia de Ventas", f"A{current_row}", "line-markers")
             
             result["elements"].append({
                 "type": "chart",
-                "name": "SalesTrendChart",
+                "name": "GraficoTendenciaVentas",
                 "sheet": sheet_name,
                 "id": chart_id
             })
             
-            current_row += 15  # Space for the chart
+            current_row += 15  # Espacio para el gráfico
         except Exception as e:
-            logger.warning(f"Error creating sales trend chart: {e}")
+            logger.warning(f"Error al crear gráfico de tendencia de ventas: {e}")
             current_row += 2
         
         result["sheets"].append({"name": sheet_name, "type": "analysis"})
         result["sheets"].append({"name": data_sheet, "type": "data"})
         
     elif template_name == "project_tracker":
-        # Template for project tracking
-        title = data.get("title", "Project Tracking")
+        # Template para seguimiento de proyectos
+        title = data.get("title", "Seguimiento de Proyectos")
         projects = data.get("projects", [])
-        sheet_name = data.get("sheet", "Projects")
+        sheet_name = data.get("sheet", "Proyectos")
         
-        # Prepare project data
+        # Preparar datos de proyectos
         if not projects:
-            # Create sample data if none is provided
+            # Crear datos de ejemplo si no se proporcionan
             projects = [
-                ["ID", "Project", "Owner", "Start", "Deadline", "Status", "Progress"],
-                ["P001", "Project A", "Juan Pérez", "01/01/2023", "30/06/2023", "In progress", 75],
-                ["P002", "Project B", "Ana López", "15/02/2023", "31/07/2023", "In progress", 40],
-                ["P003", "Project C", "Carlos Ruiz", "01/03/2023", "31/08/2023", "Delayed", 20]
+                ["ID", "Proyecto", "Responsable", "Inicio", "Plazo", "Estado", "Avance"],
+                ["P001", "Proyecto A", "Juan Pérez", "01/01/2023", "30/06/2023", "En curso", 75],
+                ["P002", "Proyecto B", "Ana López", "15/02/2023", "31/07/2023", "En curso", 40],
+                ["P003", "Proyecto C", "Carlos Ruiz", "01/03/2023", "31/08/2023", "Retrasado", 20]
             ]
         
-        # Create sheet for projects if it does not exist
+        # Crear hoja para proyectos si no existe
         if sheet_name not in list_sheets(wb):
             ws = add_sheet(wb, sheet_name)
         else:
             ws = wb[sheet_name]
         
-        # Tracker title
+        # Título del tracker
         update_cell(ws, "A1", title)
         apply_style(ws, "A1", {
             "font_size": 16,
@@ -2699,7 +2727,7 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
         
 
         
-        # Write project data
+        # Escribir datos de proyectos
         write_sheet_data(ws, "A3", projects)
         
         # Crear tabla para los datos
@@ -2708,34 +2736,34 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
         table_range = f"A3:{get_column_letter(cols)}{rows+2}"
         
         try:
-            table = add_table(ws, "ProjectsTable", table_range, "TableStyleMedium9")
+            table = add_table(ws, "TablaProyectos", table_range, "TableStyleMedium9")
             result["elements"].append({
                 "type": "table",
-                "name": "ProjectsTable",
+                "name": "TablaProyectos",
                 "sheet": sheet_name,
                 "range": table_range
             })
             
-            # Apply percentage format to the progress column
+            # Aplicar formato porcentual a la columna de avance
             avance_col = get_column_letter(cols)
             apply_number_format(ws, f"{avance_col}4:{avance_col}{rows+2}", "0%")
         except Exception as e:
             logger.warning(f"Error al crear tabla de proyectos: {e}")
         
-        # Create progress chart
+        # Crear gráfico de avance
         try:
-            chart_id, chart = add_chart(wb, sheet_name, "column",
-                                       table_range,
-                                       "Project Progress", "I3", "colorful-3")
+            chart_id, chart = add_chart(wb, sheet_name, "column", 
+                                       table_range, 
+                                       "Avance de Proyectos", "I3", "colorful-3")
             
             result["elements"].append({
                 "type": "chart",
-                "name": "ProgressChart",
+                "name": "GraficoAvance",
                 "sheet": sheet_name,
                 "id": chart_id
             })
         except Exception as e:
-            logger.warning(f"Error creating progress chart: {e}")
+            logger.warning(f"Error al crear gráfico de avance: {e}")
         
         result["sheets"].append({"name": sheet_name, "type": "tracker"})
     
@@ -2745,27 +2773,28 @@ def apply_excel_template(wb: Any, template_name: str, data: Dict[str, Any]) -> D
     
     return result
 
-def update_report(wb: Any, report_config: Dict[str, Any],
+def update_report(wb: Any, report_config: Dict[str, Any], 
                  recalculate: bool = True) -> Dict[str, Any]:
     """
-    Update an existing report with new data.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Actualiza un informe existente con nuevos datos.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
+    
     Args:
-        wb: Openpyxl workbook object.
-        report_config: Configuration for the report update
+        wb: Objeto workbook de openpyxl
+        report_config: Configuración del informe a actualizar
             {
                 "data_updates": {
-                    "Sales": {"range": "A2:C10", "data": [[new data]]},
-                    "Customers": {"range": "A2:D20", "data": [[new data]]}
+                    "Ventas": {"range": "A2:C10", "data": [[nuevos datos]]},
+                    "Clientes": {"range": "A2:D20", "data": [[nuevos datos]]}
                 },
                 "recalculate_formulas": True,
                 "refresh_charts": True
             }
-        recalculate: If ``True`` recalculate formulas after updating.
-
+        recalculate: Si True, recalcula fórmulas después de actualizar
+        
     Returns:
-        Dictionary with information about the updated elements.
+        Diccionario con información de los elementos actualizados
     """
     result = {
         "updated_sheets": [],
@@ -2778,7 +2807,7 @@ def update_report(wb: Any, report_config: Dict[str, Any],
     data_updates = report_config.get("data_updates", {})
     for sheet_name, update_info in data_updates.items():
         if sheet_name not in list_sheets(wb):
-            logger.warning(f"Sheet '{sheet_name}' not found. Skipping update.")
+            logger.warning(f"Hoja '{sheet_name}' no encontrada. Omitiendo actualización.")
             continue
         
         ws = wb[sheet_name]
@@ -2786,7 +2815,7 @@ def update_report(wb: Any, report_config: Dict[str, Any],
         data = update_info.get("data")
         
         if not range_str or not data:
-            logger.warning(f"Incomplete configuration to update sheet '{sheet_name}'. Range and data are required.")
+            logger.warning(f"Configuración incompleta para actualizar hoja '{sheet_name}'. Se requiere range y data.")
             continue
         
         try:
@@ -2814,11 +2843,11 @@ def update_report(wb: Any, report_config: Dict[str, Any],
         new_range = table_info.get("new_range")
         
         if not sheet_name or not table_name:
-            logger.warning("Incomplete table information. Sheet and name are required.")
+            logger.warning("Información de tabla incompleta. Se requiere sheet y name.")
             continue
         
         if sheet_name not in list_sheets(wb):
-            logger.warning(f"Sheet '{sheet_name}' not found. Skipping table update.")
+            logger.warning(f"Hoja '{sheet_name}' no encontrada. Omitiendo actualización de tabla.")
             continue
         
         ws = wb[sheet_name]
@@ -2826,13 +2855,13 @@ def update_report(wb: Any, report_config: Dict[str, Any],
         try:
             # Verificar si la tabla existe
             if not hasattr(ws, 'tables') or table_name not in ws.tables:
-                logger.warning(f"Table '{table_name}' not found in sheet '{sheet_name}'.")
+                logger.warning(f"Tabla '{table_name}' no encontrada en hoja '{sheet_name}'.")
                 continue
             
-            # Get current reference
+            # Obtener referencia actual
             current_range = ws.tables[table_name].ref
             
-            # Update range if a new one is provided
+            # Actualizar rango si se proporciona uno nuevo
             if new_range:
                 ws.tables[table_name].ref = new_range
                 
@@ -2849,16 +2878,16 @@ def update_report(wb: Any, report_config: Dict[str, Any],
                     "refreshed": True
                 })
         except Exception as e:
-            logger.warning(f"Error updating table '{table_name}': {e}")
+            logger.warning(f"Error al actualizar tabla '{table_name}': {e}")
     
-    # Recalculate formulas if requested
+    # Recalcular fórmulas si se solicita
     if recalculate:
-        # OpenPyXL does not directly recalculate formulas
-        # This is a placeholder that could be implemented in future versions
-        # or via Excel's COM API if available
-        result["recalculation_note"] = "Formula recalculation in OpenPyXL is limited"
+        # En OpenPyXL no hay una funcionalidad directa para recalcular fórmulas
+        # Esta es una función de placeholder que podría implementarse en versiones futuras
+        # o mediante la API COM de Excel si está disponible
+        result["recalculation_note"] = "Recalcular fórmulas en OpenPyXL es limitado"
     
-    # Update charts
+    # Actualizar gráficos
     refresh_charts = report_config.get("refresh_charts", [])
     for chart_info in refresh_charts:
         sheet_name = chart_info.get("sheet")
@@ -2866,31 +2895,31 @@ def update_report(wb: Any, report_config: Dict[str, Any],
         new_data_range = chart_info.get("new_data_range")
         
         if not sheet_name or chart_id is None:
-            logger.warning("Incomplete chart information. Sheet and id are required.")
+            logger.warning("Información de gráfico incompleta. Se requiere sheet y id.")
             continue
         
         if sheet_name not in list_sheets(wb):
-            logger.warning(f"Sheet '{sheet_name}' not found. Skipping chart update.")
+            logger.warning(f"Hoja '{sheet_name}' no encontrada. Omitiendo actualización de gráfico.")
             continue
         
         ws = wb[sheet_name]
         
         try:
-            # Verify if the chart exists
+            # Verificar si el gráfico existe
             if not hasattr(ws, '_charts') or chart_id >= len(ws._charts) or chart_id < 0:
-                logger.warning(f"Chart with ID {chart_id} not found in sheet '{sheet_name}'.")
+                logger.warning(f"Gráfico con ID {chart_id} no encontrado en hoja '{sheet_name}'.")
                 continue
             
-            # In OpenPyXL updating a chart is not straightforward
-            # One option is to delete the chart and create a new one
+            # En OpenPyXL, actualizar un gráfico no es tan directo
+            # Una opción sería eliminar el gráfico y crear uno nuevo
             if new_data_range:
-                # Get current chart properties
+                # Obtener propiedades del gráfico actual
                 chart_rel = ws._charts[chart_id]
                 chart = chart_rel[0]
                 position = chart_rel[1] if len(chart_rel) > 1 else None
                 
-                # Determine chart type
-                chart_type = "column"  # Default value
+                # Determinar el tipo de gráfico
+                chart_type = "column"  # Valor por defecto
                 if isinstance(chart, BarChart):
                     chart_type = "bar" if chart.type == "bar" else "column"
                 elif isinstance(chart, LineChart):
@@ -2902,13 +2931,13 @@ def update_report(wb: Any, report_config: Dict[str, Any],
                 elif isinstance(chart, AreaChart):
                     chart_type = "area"
                 
-                # Get title if it exists
+                # Obtener título si existe
                 title = chart.title if hasattr(chart, 'title') and chart.title else None
                 
-                # Delete the old chart
+                # Eliminar el gráfico viejo
                 del ws._charts[chart_id]
                 
-                # Create a new chart with the same parameters but new range
+                # Crear un nuevo gráfico con los mismos parámetros pero nuevo rango
                 new_chart_id, new_chart = add_chart(wb, sheet_name, chart_type, new_data_range,
                                                  title, position)
                 
@@ -2916,43 +2945,43 @@ def update_report(wb: Any, report_config: Dict[str, Any],
                     "id": chart_id,
                     "new_id": new_chart_id,
                     "sheet": sheet_name,
-                    "old_data_range": "unknown",  # No easy way to get the original range
+                    "old_data_range": "unknown",  # No hay forma fácil de obtener el rango original
                     "new_data_range": new_data_range
                 })
             else:
-                # Without a new range it cannot be easily updated
+                # Sin nuevo rango, no se puede actualizar fácilmente
                 result["updated_charts"].append({
                     "id": chart_id,
                     "sheet": sheet_name,
-                    "note": "No new range provided. Updating data requires Excel COM."
+                    "note": "No se proporcionó nuevo rango. La actualización real de datos requiere Excel COM."
                 })
         except Exception as e:
-            logger.warning(f"Error updating chart {chart_id}: {e}")
+            logger.warning(f"Error al actualizar gráfico {chart_id}: {e}")
     
     return result
 
 def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Import data from various sources into Excel.
-
+    Importa datos de distintas fuentes a Excel.
+    
     Args:
-        wb: Openpyxl workbook object.
-        import_config: Import configuration
+        wb: Objeto workbook de openpyxl
+        import_config: Configuración de la importación
             {
-                "source": "csv",  # csv, json, pandas, etc.
-                "source_path": "data.csv",
-                "sheet": "Data",
+                "source": "csv", // csv, json, pandas, etc.
+                "source_path": "datos.csv",
+                "sheet": "Datos",
                 "start_cell": "A1",
                 "options": {
                     "delimiter": ",",
                     "has_header": true
                 }
             }
-
+        
     Returns:
-        Dictionary with information about the imported data.
-
-    Note: This function is a simplified example that only imports data from CSV.
+        Diccionario con información de los datos importados
+    
+    Nota: Esta función es un ejemplo simplificado que solo importa datos desde CSV.
     """
     result = {
         "source": import_config.get("source"),
@@ -2962,16 +2991,16 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
     
     source_type = import_config.get("source", "").lower()
     source_path = import_config.get("source_path")
-    sheet_name = import_config.get("sheet", "Data")
+    sheet_name = import_config.get("sheet", "Datos")
     start_cell = import_config.get("start_cell", "A1")
     options = import_config.get("options", {})
     
     if not source_path:
-        logger.warning("No source path specified for importing data.")
-        result["error"] = "No source path specified"
+        logger.warning("No se especificó una ruta de origen para importar datos.")
+        result["error"] = "No se especificó una ruta de origen"
         return result
         
-    # Create the sheet if it does not exist
+    # Crear la hoja si no existe
     if sheet_name not in list_sheets(wb):
         ws = add_sheet(wb, sheet_name)
     else:
@@ -2990,7 +3019,7 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
                 for row in csv_reader:
                     data.append(row)
             
-            # Write the data
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
             
             result["imported_rows"] = len(data)
@@ -2998,8 +3027,8 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
             result["sheet"] = sheet_name
             result["start_cell"] = start_cell
         except Exception as e:
-            logger.error(f"Error importing CSV: {e}")
-            result["error"] = f"Error importing CSV: {e}"
+            logger.error(f"Error al importar CSV: {e}")
+            result["error"] = f"Error al importar CSV: {e}"
     
     elif source_type == "json":
         try:
@@ -3008,30 +3037,30 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
             with open(source_path, 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
             
-            # Convert JSON to list of lists
+            # Convertir JSON a lista de listas
             data = []
             
             if isinstance(json_data, list):
-                # It is a list of objects
+                # Es una lista de objetos
                 if json_data and isinstance(json_data[0], dict):
-                    # Get headers (claves del primer objeto)
+                    # Obtener encabezados (claves del primer objeto)
                     headers = list(json_data[0].keys())
                     data.append(headers)
                     
-                    # Add data rows
+                    # Añadir filas de datos
                     for item in json_data:
                         row = [item.get(header, "") for header in headers]
                         data.append(row)
                 else:
-                    # It is a simple list
+                    # Es una lista simple
                     for item in json_data:
                         data.append([item])
             elif isinstance(json_data, dict):
-                # It is a dictionary
+                # Es un diccionario
                 for key, value in json_data.items():
                     data.append([key, value])
             
-            # Write the data
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
             
             result["imported_rows"] = len(data)
@@ -3039,14 +3068,14 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
             result["sheet"] = sheet_name
             result["start_cell"] = start_cell
         except Exception as e:
-            logger.error(f"Error importing JSON: {e}")
-            result["error"] = f"Error importing JSON: {e}"
+            logger.error(f"Error al importar JSON: {e}")
+            result["error"] = f"Error al importar JSON: {e}"
     
     elif source_type == "pandas":
         try:
             import pandas as pd
             
-            # Options for pandas
+            # Opciones para pandas
             file_ext = os.path.splitext(source_path)[1].lower()
             
             if file_ext == '.csv':
@@ -3056,13 +3085,13 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
             elif file_ext == '.json':
                 df = pd.read_json(source_path)
             else:
-                raise ValueError(f"Unsupported file format: {file_ext}")
+                raise ValueError(f"Formato de archivo no soportado: {file_ext}")
             
-            # Convert DataFrame to list of lists
+            # Convertir DataFrame a lista de listas
             data = [df.columns.tolist()]  # Encabezados
             data.extend(df.values.tolist())  # Datos
             
-            # Write the data
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
             
             result["imported_rows"] = len(data)
@@ -3070,37 +3099,37 @@ def import_data(wb: Any, import_config: Dict[str, Any]) -> Dict[str, Any]:
             result["sheet"] = sheet_name
             result["start_cell"] = start_cell
         except Exception as e:
-            logger.error(f"Error importing with pandas: {e}")
-            result["error"] = f"Error importing with pandas: {e}"
+            logger.error(f"Error al importar con pandas: {e}")
+            result["error"] = f"Error al importar con pandas: {e}"
     
     else:
-        logger.warning(f"Unsupported source type: {source_type}")
-        result["error"] = f"Unsupported source type: {source_type}"
+        logger.warning(f"Tipo de fuente no soportado: {source_type}")
+        result["error"] = f"Tipo de fuente no soportado: {source_type}"
     
     return result
 
 def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Export data from Excel to different formats.
-
+    Exporta datos de Excel a distintos formatos.
+    
     Args:
-        wb: Openpyxl workbook object.
-        export_config: Export configuration
+        wb: Objeto workbook de openpyxl
+        export_config: Configuración de la exportación
             {
-                "format": "csv",  # csv, json, pdf, html, etc.
-                "sheet": "Data",
+                "format": "csv", // csv, json, pdf, html, etc.
+                "sheet": "Datos",
                 "range": "A1:D10",
-                "output_path": "exported_data.csv",
+                "output_path": "datos_exportados.csv",
                 "options": {
                     "delimiter": ",",
                     "include_header": true
                 }
             }
-
+        
     Returns:
-        Dictionary with information about the exported data.
-
-    Note: This function is a simplified example that only exports to CSV and JSON.
+        Diccionario con información de los datos exportados
+    
+    Nota: Esta función es un ejemplo simplificado que solo exporta a CSV y JSON.
     """
     result = {
         "format": export_config.get("format"),
@@ -3115,8 +3144,8 @@ def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
     options = export_config.get("options", {})
     
     if not sheet_name:
-        logger.warning("No sheet specified para exportar datos.")
-        result["error"] = "No sheet specified"
+        logger.warning("No se especificó una hoja para exportar datos.")
+        result["error"] = "No se especificó una hoja"
         return result
         
     if sheet_name not in list_sheets(wb):
@@ -3128,16 +3157,16 @@ def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
     data = read_sheet_data(wb, sheet_name, range_str)
     
     if not data:
-        logger.warning(f"No data found in range {range_str} de la hoja {sheet_name}")
+        logger.warning(f"No se encontraron datos en el rango {range_str} de la hoja {sheet_name}")
         return []
     
-    # Filter the data based on the criteria
+    # Filtrar los datos según los criterios
     result = []
     headers = data[0] if data else []
     
-    # If there is data with headers
+    # Si tenemos datos con encabezados
     if len(data) > 1:
-        # Convert to record format (list of dictionaries)
+        # Convertir a formato de registros (lista de diccionarios)
         records = []
         for row in data[1:]:
             record = {}
@@ -3148,19 +3177,19 @@ def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
                     record[header] = None
             records.append(record)
         
-        # Apply filters if provided
+        # Aplicar filtros si se proporcionan
         if filters:
             filtered_records = []
             for record in records:
                 include = True
                 for field, value in filters.items():
                     if field in record:
-                        # If the filter value is a list, check if the value is in the list
+                        # Si el valor del filtro es una lista, verificar si el valor está en la lista
                         if isinstance(value, list):
                             if record[field] not in value:
                                 include = False
                                 break
-                        # If the filter value is a dictionary, apply operators
+                        # Si el valor del filtro es un diccionario, aplicar operadores
                         elif isinstance(value, dict):
                             for op, op_value in value.items():
                                 if op == 'eq' and record[field] != op_value:
@@ -3178,7 +3207,7 @@ def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
                                 elif op == 'contains' and (not isinstance(record[field], str) or op_value not in record[field]):
                                     include = False
                                     break
-                        # If the filter value is a simple value, perform an equality comparison
+                        # Si el valor del filtro es un valor simple, hacer una comparación de igualdad
                         elif record[field] != value:
                             include = False
                             break
@@ -3193,14 +3222,15 @@ def export_data(wb: Any, export_config: Dict[str, Any]) -> Dict[str, Any]:
 
 def create_report_from_template(template_file, output_file, data_mappings, chart_mappings=None, format_mappings=None):
     """
-    Create a report based on an Excel template, replacing data, updating charts and applying formats.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Crea un informe basado en una plantilla Excel, sustituyendo datos, actualizando gráficos y aplicando formatos.
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
+    
     Args:
-        template_file (str): Path to the Excel template.
+        template_file (str): Ruta a la plantilla Excel
 
-        output_file (str): Path where the generated report will be saved.
-        data_mappings (dict): Dictionary with data mappings:
+        output_file (str): Ruta donde guardar el informe generado
+        data_mappings (dict): Diccionario con mapeos de datos:
             {
                 "sheet_name": {
                     "range1": data_list1,
@@ -3208,17 +3238,17 @@ def create_report_from_template(template_file, output_file, data_mappings, chart
                     ...
                 }
             }
-        chart_mappings (dict, optional): Dictionary with chart updates:
+        chart_mappings (dict, opcional): Diccionario con actualizaciones de gráficos:
             {
                 "sheet_name": {
                     "chart_id": {
-                        "title": "New title",
-                        "data_range": "New range",
+                        "title": "Nuevo título",
+                        "data_range": "Nuevo rango",
                         ...
                     }
                 }
             }
-        format_mappings (dict, optional): Dictionary with formats to apply:
+        format_mappings (dict, opcional): Diccionario con formatos a aplicar:
             {
                 "sheet_name": {
                     "range1": {"number_format": "#,##0.00"},
@@ -3226,9 +3256,9 @@ def create_report_from_template(template_file, output_file, data_mappings, chart
                     ...
                 }
             }
-
+    
     Returns:
-        dict: Result of the operation
+        dict: Resultado de la operación
     """
     try:
         # Verificar que el archivo de plantilla existe
@@ -3246,7 +3276,7 @@ def create_report_from_template(template_file, output_file, data_mappings, chart
         if data_mappings:
             for sheet_name, ranges in data_mappings.items():
                 if sheet_name not in wb.sheetnames:
-                    logger.warning(f"Sheet '{sheet_name}' does not exist in the template")
+                    logger.warning(f"La hoja '{sheet_name}' no existe en la plantilla")
                     continue
                 
                 ws = wb[sheet_name]
@@ -3257,51 +3287,51 @@ def create_report_from_template(template_file, output_file, data_mappings, chart
                     else:
                         start_cell = range_str.split(':')[0]
                     
-                    # Write the data
+                    # Escribir los datos
                     write_sheet_data(ws, start_cell, data)
         
-        # Apply chart mappings
+        # Aplicar mapeos de gráficos
         if chart_mappings:
             for sheet_name, charts in chart_mappings.items():
                 if sheet_name not in wb.sheetnames:
-                    logger.warning(f"Sheet '{sheet_name}' does not exist in the template")
+                    logger.warning(f"La hoja '{sheet_name}' no existe en la plantilla")
                     continue
                 
                 ws = wb[sheet_name]
                 existing_charts = list_charts(ws)
                 
                 for chart_id, chart_updates in charts.items():
-                    # Check if chart_id is an index or a name
+                    # Verificar si el chart_id es un índice o un nombre
                     chart_idx = None
                     if isinstance(chart_id, int) or (isinstance(chart_id, str) and chart_id.isdigit()):
                         chart_idx = int(chart_id)
                     else:
-                        # Look up the chart by title
+                        # Buscar el chart por título
                         for i, chart in enumerate(existing_charts):
                             if chart.get('title') == chart_id:
                                 chart_idx = i
                                 break
                     
                     if chart_idx is None or chart_idx >= len(existing_charts):
-                        logger.warning(f"Chart not found '{chart_id}' en la hoja '{sheet_name}'")
+                        logger.warning(f"No se encontró el gráfico '{chart_id}' en la hoja '{sheet_name}'")
                         continue
                     
-                    # Update chart properties
+                    # Actualizar propiedades del gráfico
                     chart = ws._charts[chart_idx][0]
                     
                     if 'title' in chart_updates:
                         chart.title = chart_updates['title']
                     
                     if 'data_range' in chart_updates:
-                        # Updating the data range is complex and depends on the chart type
-                        # For now just log that this feature is not implemented
-                        logger.warning("Chart data range update is not fully implemented")
+                        # La actualización del rango de datos es compleja y depende del tipo de gráfico
+                        # Por ahora, simplemente logueamos que esta funcionalidad no está implementada
+                        logger.warning("La actualización del rango de datos de gráficos no está implementada completamente")
         
         # Aplicar mapeos de formato
         if format_mappings:
             for sheet_name, ranges in format_mappings.items():
                 if sheet_name not in wb.sheetnames:
-                    logger.warning(f"Sheet '{sheet_name}' does not exist in the template")
+                    logger.warning(f"La hoja '{sheet_name}' no existe en la plantilla")
                     continue
                 
                 ws = wb[sheet_name]
@@ -3332,16 +3362,18 @@ def create_report_from_template(template_file, output_file, data_mappings, chart
 
 def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False):
     """
-    Create a dynamic dashboard with multiple visualizations in a single step.
+    Crea un dashboard dinámico con múltiples visualizaciones en un solo paso.
 
-    Models using this function should ensure that tables and charts do not overlap.
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
-    Leaving empty rows between sections and adjusting column widths after writing
-    the data helps produce a clean, professional result.
+    Los modelos que utilicen esta función deben procurar que las tablas y los
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
+
+    gráficos no se solapen. Es aconsejable dejar filas de separación y comprobar
+    el ancho necesario de cada columna tras escribir los datos. Aplicar estilos
+    coherentes ayuda a que el resultado sea más limpio y profesional.
 
     Args:
-        file_path (str): Path to the Excel file to create or modify.
-        data (dict): Dictionary with data per sheet:
+        file_path (str): Ruta al archivo Excel a crear o modificar
+        data (dict): Diccionario con datos por hoja:
             {
                 "sheet_name": [
                     ["Header1", "Header2", ...],
@@ -3349,7 +3381,7 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
                     ...
                 ]
             }
-        dashboard_config (dict): Dashboard configuration:
+        dashboard_config (dict): Configuración del dashboard:
             {
                 "tables": [
                     {
@@ -3378,10 +3410,10 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
                     }
                 ]
             }
-        overwrite (bool): If ``True`` overwrite the file if it exists.
-
+        overwrite (bool): Si es True, sobrescribe el archivo si existe
+    
     Returns:
-        dict: Result of the operation
+        dict: Resultado de la operación
     """
     try:
         # Verificar si el archivo existe
@@ -3418,7 +3450,7 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
             style = table_config.get("style", "TableStyleMedium9")
             
             if sheet_name not in wb.sheetnames:
-                logger.warning(f"Sheet '{sheet_name}' does not exist to create table '{table_name}'")
+                logger.warning(f"La hoja '{sheet_name}' no existe para crear la tabla '{table_name}'")
                 continue
             
             ws = wb[sheet_name]
@@ -3427,7 +3459,7 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
             table_exists = False
             if hasattr(ws, 'tables') and table_name in ws.tables:
                 table_exists = True
-                logger.warning(f"Table '{table_name}' already exists, it will be updated")
+                logger.warning(f"La tabla '{table_name}' ya existe, se actualizará")
             
             if table_exists:
                 # Actualizar tabla existente
@@ -3440,13 +3472,13 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
             if "formats" in table_config:
                 for cell_range, fmt in table_config["formats"].items():
                     if isinstance(fmt, str):
-                        # Numeric format
+                        # Es un formato numérico
                         apply_number_format(ws, cell_range, fmt)
                     elif isinstance(fmt, dict):
                         # Es un estilo
                         apply_style(ws, cell_range, fmt)
         
-        # Create charts
+        # Crear gráficos
         for chart_config in dashboard_config.get("charts", []):
             sheet_name = chart_config["sheet"]
             chart_type = chart_config["type"]
@@ -3456,16 +3488,16 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
             style = chart_config.get("style")
             
             if sheet_name not in wb.sheetnames:
-                logger.warning(f"Sheet '{sheet_name}' does not exist to create the chart '{title}'")
+                logger.warning(f"La hoja '{sheet_name}' no existe para crear el gráfico '{title}'")
                 continue
             
-            # Create chart
+            # Crear gráfico
             chart_id, _ = add_chart(wb, sheet_name, chart_type, data_range, title, position, style)
         
-        # Set column widths for optimal display
+        # Configurar tamaños de columna para visualización óptima
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
-            # Set a minimum width for date columns
+            # Establecer un ancho mínimo para columnas con fechas
             for i in range(1, ws.max_column + 1):
                 column_letter = get_column_letter(i)
                 # Verificar si hay celdas con formato de fecha en la columna
@@ -3476,7 +3508,7 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
                         break
                 
                 if date_format:
-                    # Set minimum width for date columns
+                    # Establecer ancho mínimo para columnas con fechas
                     ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width or 0, 10)
         
         # Guardar el archivo
@@ -3489,22 +3521,22 @@ def create_dynamic_dashboard(file_path, data, dashboard_config, overwrite=False)
         }
     
     except Exception as e:
-        logger.error(f"Error creating dashboard: {e}")
+        logger.error(f"Error al crear dashboard: {e}")
         return {
             "success": False,
             "error": str(e),
-            "message": f"Error creating dashboard: {e}"
+            "message": f"Error al crear dashboard: {e}"
         }
 
 def import_multi_source_data(excel_file, import_config, sheet_name=None, start_cell="A1", create_tables=False):
     """
-    Import data from multiple sources (CSV, JSON, SQL) into an Excel file in one step.
-
-     **Emojis must never be included in text written to cells, labels, titles or charts.**
+    Importa datos desde múltiples fuentes (CSV, JSON, SQL) a un archivo Excel en un solo paso.
+    
+     **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
     Args:
-        excel_file (str): Path to the Excel file where the data will be imported.
-        import_config (dict): Import configuration:
+        excel_file (str): Ruta al archivo Excel donde importar los datos
+        import_config (dict): Configuración de importación:
             {
                 "csv": [
                     {
@@ -3532,24 +3564,24 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                     }
                 ]
             }
-        sheet_name (str, optional): Default sheet name if not specified in the configuration
-        start_cell (str, optional): Default starting cell if not specified in the configuration
-        create_tables (bool, optional): If True, create Excel tables for each dataset
+        sheet_name (str, opcional): Nombre de hoja predeterminado si no se especifica en la configuración
+        start_cell (str, opcional): Celda inicial predeterminada si no se especifica en la configuración
+        create_tables (bool, opcional): Si es True, crea tablas Excel para cada conjunto de datos
     
     Returns:
-        dict: Result of the operation
+        dict: Resultado de la operación
     """
     try:
         import csv
         import json
         
-        # Try to import pandas if available (optional)
+        # Intentar importar pandas si está disponible (opcional)
         try:
             import pandas as pd
             HAS_PANDAS = True
         except ImportError:
             HAS_PANDAS = False
-            logger.warning("Pandas is not available. Some features will be limited.")
+            logger.warning("Pandas no está disponible. Algunas funcionalidades estarán limitadas.")
         
         # Verificar si el archivo Excel existe, si no, crearlo
         if not os.path.exists(excel_file):
@@ -3582,12 +3614,12 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
             
             # Leer datos CSV
             if HAS_PANDAS:
-                # Use pandas if available
+                # Usar pandas si está disponible
                 df = pd.read_csv(csv_file, delimiter=delimiter, encoding=encoding)
                 data = [df.columns.tolist()]  # Encabezados
                 data.extend(df.values.tolist())  # Datos
             else:
-                # Use standard csv if pandas is not available
+                # Usar csv estándar si pandas no está disponible
                 data = []
                 with open(csv_file, 'r', encoding=encoding) as f:
                     reader = csv.reader(f, delimiter=delimiter)
@@ -3605,14 +3637,14 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                 end_col = start_col + (len(data[0]) if data and len(data) > 0 else 0) - 1
                 table_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
                 
-                # Create a unique name for the table
+                # Crear un nombre único para la tabla
                 table_name = f"Table_{csv_sheet}_{len(imported_data) + 1}"
                 table_name = table_name.replace(" ", "_")
                 
                 try:
                     add_table(ws, table_name, table_range, "TableStyleMedium9")
                 except Exception as table_error:
-                    logger.warning(f"Could not create the table for {csv_file}: {table_error}")
+                    logger.warning(f"No se pudo crear la tabla para {csv_file}: {table_error}")
             
             imported_data.append({
                 "source": "csv",
@@ -3661,7 +3693,7 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                         row = [item.get(field, "") for field in headers]
                         data.append(row)
                     else:
-                        # If the item is not a dictionary, add it as a single column
+                        # Si el elemento no es un diccionario, añadirlo como una sola columna
                         data.append([item])
             else:
                 # Si es un solo objeto, usar sus claves y valores
@@ -3675,7 +3707,7 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                         headers = list(json_data.keys())
                         data = [headers, list(json_data.values())]
                 else:
-                    # If it is neither a dictionary nor a list, use a simple representation
+                    # Si no es un diccionario ni una lista, usar una representación simple
                     data = [["Value"], [json_data]]
             
             # Escribir datos en la hoja
@@ -3689,14 +3721,14 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                 end_col = start_col + (len(data[0]) if data and len(data) > 0 else 0) - 1
                 table_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
                 
-                # Create a unique name for the table
+                # Crear un nombre único para la tabla
                 table_name = f"Table_{json_sheet}_{len(imported_data) + 1}"
                 table_name = table_name.replace(" ", "_")
                 
                 try:
                     add_table(ws, table_name, table_range, "TableStyleMedium9")
                 except Exception as table_error:
-                    logger.warning(f"Could not create the table for {json_file}: {table_error}")
+                    logger.warning(f"No se pudo crear la tabla para {json_file}: {table_error}")
             
             imported_data.append({
                 "source": "json",
@@ -3705,14 +3737,14 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                 "rows": len(data)
             })
         
-        # Process SQL queries (requires database connection)
+        # Procesar consultas SQL (requiere conexión a base de datos)
         if "sql" in import_config and import_config["sql"]:
             try:
                 import pyodbc
                 HAS_PYODBC = True
             except ImportError:
                 HAS_PYODBC = False
-                logger.warning("pyodbc is not available. SQL data cannot be imported.")
+                logger.warning("pyodbc no está disponible. No se pueden importar datos SQL.")
             
             if HAS_PYODBC or HAS_PANDAS:
                 for sql_config in import_config.get("sql", []):
@@ -3735,7 +3767,7 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                         data = []
                         
                         if HAS_PANDAS:
-                            # Use pandas if available
+                            # Usar pandas si está disponible
                             import urllib.parse
                             params = urllib.parse.quote_plus(connection_string)
                             connection_url = f"mssql+pyodbc:///?odbc_connect={params}"
@@ -3773,14 +3805,14 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
                             end_col = start_col + (len(data[0]) if data and len(data) > 0 else 0) - 1
                             table_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
                             
-                            # Create a unique name for the table
+                            # Crear un nombre único para la tabla
                             table_name = f"Table_{sql_sheet}_{len(imported_data) + 1}"
                             table_name = table_name.replace(" ", "_")
                             
                             try:
                                 add_table(ws, table_name, table_range, "TableStyleMedium9")
                             except Exception as table_error:
-                                logger.warning(f"Could not create the table for SQL query: {table_error}")
+                                logger.warning(f"No se pudo crear la tabla para consulta SQL: {table_error}")
                         
                         imported_data.append({
                             "source": "sql",
@@ -3813,11 +3845,11 @@ def import_multi_source_data(excel_file, import_config, sheet_name=None, start_c
 
 def export_excel_data(excel_file, export_config):
     """
-    Export Excel data to multiple formats (CSV, JSON, PDF) in one step.
+    Exporta datos de Excel a múltiples formatos (CSV, JSON, PDF) en un solo paso.
     
     Args:
-        excel_file (str): Path to the source Excel file
-        export_config (dict): Export configuration:
+        excel_file (str): Ruta al archivo Excel de origen
+        export_config (dict): Configuración de exportación:
             {
                 "csv": [
                     {
@@ -3837,13 +3869,13 @@ def export_excel_data(excel_file, export_config):
                     }
                 ],
                 "pdf": {
-                      "output_file": "output.pdf",
-                      "sheets": ["Sheet1", "Sheet2"]  # or null for all
+                    "output_file": "output.pdf",
+                    "sheets": ["Sheet1", "Sheet2"]  # o null para todas
                 }
             }
     
     Returns:
-        dict: Result of the operation
+        dict: Resultado de la operación
     """
     try:
         import csv
@@ -3872,7 +3904,7 @@ def export_excel_data(excel_file, export_config):
             # Leer los datos del rango especificado
             data = read_sheet_data(wb, sheet_name, range_str)
             
-            # Write the data en CSV
+            # Escribir los datos en CSV
             with open(output_file, 'w', newline='', encoding=encoding) as csvfile:
                 writer = csv.writer(csvfile, delimiter=delimiter)
                 for row in data:
@@ -3903,7 +3935,7 @@ def export_excel_data(excel_file, export_config):
                 logger.warning(f"No hay datos para exportar en la hoja '{sheet_name}'")
                 continue
             
-            # Convert data to JSON format according to the specified type
+            # Convertir datos a formato JSON según el tipo especificado
             headers = data[0]
             json_data = None
             
@@ -3937,7 +3969,7 @@ def export_excel_data(excel_file, export_config):
                     "data": [row for row in data[1:]]
                 }
             
-            # Write the data en JSON
+            # Escribir los datos en JSON
             with open(output_file, 'w', encoding='utf-8') as jsonfile:
                 json.dump(json_data, jsonfile, indent=2)
             
@@ -3955,7 +3987,7 @@ def export_excel_data(excel_file, export_config):
             sheets = pdf_config.get("sheets")
             
             try:
-                # Try to use win32com for Excel if available
+                # Intentar usar win32com para Excel si está disponible
                 import win32com.client
                 excel = win32com.client.Dispatch("Excel.Application")
                 excel.Visible = False
@@ -3991,8 +4023,8 @@ def export_excel_data(excel_file, export_config):
                 excel.Quit()
             
             except ImportError:
-                logger.warning("win32com is not available. Cannot export to PDF.")
-                pass  # If win32com is not available, simply skip the PDF export
+                logger.warning("win32com no está disponible. No se puede exportar a PDF.")
+                pass  # Si win32com no está disponible, simplemente omitir la exportación PDF
             except Exception as pdf_error:
                 logger.error(f"Error al exportar a PDF: {pdf_error}")
                 pass
@@ -4013,15 +4045,15 @@ def export_excel_data(excel_file, export_config):
         }
 
 def export_single_visible_sheet_pdf(excel_file: str, output_pdf: Optional[str] = None) -> Dict[str, Any]:
-    """Export an Excel workbook to PDF only if it has a single visible sheet.
+    """Exporta un libro de Excel a PDF solo si contiene una única hoja visible.
 
     Args:
-        excel_file: Path to the Excel file to export.
-        output_pdf: Path of the resulting PDF file. If not provided, the same
-            name as ``excel_file`` with ``.pdf`` extension is used.
+        excel_file: Ruta al archivo Excel a exportar.
+        output_pdf: Ruta del archivo PDF resultante. Si no se indica se usa el
+            mismo nombre que ``excel_file`` con extensión ``.pdf``.
 
     Returns:
-        dict: Result of the operation.
+        dict: Resultado de la operación.
     """
     try:
         import shutil
@@ -4034,7 +4066,7 @@ def export_single_visible_sheet_pdf(excel_file: str, output_pdf: Optional[str] =
         visible_sheets = [ws.title for ws in wb.worksheets if getattr(ws, "sheet_state", "visible") == "visible"]
 
         if len(visible_sheets) != 1:
-            msg = f"The file must have a single visible sheet. Visible sheets: {len(visible_sheets)}"
+            msg = f"El archivo debe tener una única hoja visible. Hojas visibles: {len(visible_sheets)}"
             logger.warning(msg)
             return {
                 "success": False,
@@ -4058,7 +4090,7 @@ def export_single_visible_sheet_pdf(excel_file: str, output_pdf: Optional[str] =
             workbook.Close(False)
             excel.Quit()
 
-            msg = f"File successfully exported to PDF: {output_pdf}"
+            msg = f"Archivo exportado correctamente a PDF: {output_pdf}"
             logger.info(msg)
             return {
                 "success": True,
@@ -4067,7 +4099,7 @@ def export_single_visible_sheet_pdf(excel_file: str, output_pdf: Optional[str] =
                 "message": msg,
             }
         except ImportError:
-            logger.info("win32com not available, LibreOffice will be tried")
+            logger.info("win32com no disponible, se intentará usar LibreOffice")
         except Exception as e:
             logger.error(f"Error al exportar con win32com: {e}")
 
@@ -4091,7 +4123,7 @@ def export_single_visible_sheet_pdf(excel_file: str, output_pdf: Optional[str] =
                 "message": msg,
             }
 
-        msg = "No available method found to export to PDF."
+        msg = "No se encontró un método disponible para exportar a PDF."
         logger.error(msg)
         return {
             "success": False,
@@ -4114,27 +4146,28 @@ def export_sheets_to_pdf(
     output_dir: Optional[str] = None,
     single_file: bool = False,
 ) -> Dict[str, Any]:
-    """Export one or more sheets of an Excel workbook to PDF.
+    """Exporta una o varias hojas de un libro de Excel a PDF.
 
     Parameters
     ----------
     excel_file : str
-        Path to the Excel file to export.
+        Ruta al archivo Excel a exportar.
     sheets : Union[str, List[str]], optional
-        Name of the sheet or list of sheets to export. If ``None`` all sheets
-        in the workbook are exported one by one.
+        Nombre de la hoja o lista de hojas a exportar. Si ``None`` se exportan
+        todas las hojas del libro (una por una).
     output_dir : str, optional
-        Folder where the PDFs will be stored. By default the original file
-        directory is used.
+        Carpeta donde guardar los PDF. Por defecto se usa la carpeta del
+        archivo original.
     single_file : bool, optional
-        If ``True`` and several sheets are specified a single PDF is generated
-        with all of them if supported. If ``False`` a PDF is created per sheet.
+        Si es ``True`` y se especifican varias hojas se intentará crear un único
+        PDF con todas ellas (si el sistema lo permite). Si es ``False`` se
+        generará un PDF por cada hoja.
 
     Returns
     -------
     dict
-        Operation result with the list of generated PDFs. If any sheet does not
-        exist a warning is included in ``warnings``.
+        Resultado de la operación con la lista de PDFs generados. Si alguna hoja
+        no existe se incluye un aviso en ``warnings``.
     """
 
     try:
@@ -4164,7 +4197,7 @@ def export_sheets_to_pdf(
                 warnings.append(f"La hoja '{s}' no existe")
 
         if not valid_sheets:
-            msg = "No valid sheets found to export"
+            msg = "No se encontraron hojas válidas para exportar"
             logger.warning(msg)
             return {
                 "success": False,
@@ -4178,7 +4211,7 @@ def export_sheets_to_pdf(
 
         pdf_files: List[str] = []
 
-        # Try to use win32com if available
+        # Intentar usar win32com si está disponible
         try:
             import win32com.client
 
@@ -4205,7 +4238,7 @@ def export_sheets_to_pdf(
             workbook.Close(False)
             excel.Quit()
 
-            msg = "PDF export completed successfully"
+            msg = "Exportación a PDF realizada correctamente"
             logger.info(msg)
             return {
                 "success": True,
@@ -4215,7 +4248,7 @@ def export_sheets_to_pdf(
                 "message": msg,
             }
         except ImportError:
-            logger.info("win32com not available, trying LibreOffice")
+            logger.info("win32com no disponible, se intentará usar LibreOffice")
         except Exception as e:
             logger.error(f"Error al exportar con win32com: {e}")
 
@@ -4275,7 +4308,7 @@ def export_sheets_to_pdf(
                         shutil.move(generated, final)
                         pdf_files.append(final)
 
-            msg = "PDF export completed successfully"
+            msg = "Exportación a PDF realizada correctamente"
             logger.info(msg)
             return {
                 "success": True,
@@ -4285,7 +4318,7 @@ def export_sheets_to_pdf(
                 "message": msg,
             }
 
-        msg = "No available method found to export to PDF."
+        msg = "No se encontró un método disponible para exportar a PDF."
         logger.error(msg)
         return {
             "success": False,
@@ -4311,23 +4344,23 @@ if HAS_MCP:
                  dependencies=["openpyxl", "pandas", "numpy"])
     logger.info("Servidor MCP unificado iniciado correctamente")
     
-    # Register basic workbook management functions
-    @mcp.tool(description="Creates a new empty Excel file")
+    # Registrar funciones básicas de gestión de workbooks
+    @mcp.tool(description="Crea un nuevo fichero Excel vacío")
     def create_workbook_tool(filename, overwrite=False):
-        """Create a new empty Excel workbook.
-
-        This function creates an empty ``.xlsx`` file at the specified location.
-        It is the recommended first step when generating a new document from scratch.
-
+        """Crea un nuevo fichero Excel vacío
+        
+        Esta función permite crear un nuevo archivo Excel (.xlsx) vacío en la ubicación especificada.
+        Es el primer paso recomendado cuando se quiere generar un nuevo documento desde cero.
+        
         Args:
-            filename (str): Full path and name of the file to create. Must have a ``.xlsx`` extension.
-            overwrite (bool, optional): If ``True`` overwrite the file if it already exists. Default is ``False``.
-
+            filename (str): Ruta completa y nombre del archivo a crear. Debe tener extensión .xlsx
+            overwrite (bool, optional): Si es True, sobrescribe el archivo si ya existe. Por defecto es False.
+        
         Returns:
-            dict: Information about the operation result including the created file path.
-
-        Example:
-            create_workbook_tool("C:/data/new_book.xlsx")
+            dict: Información sobre el resultado de la operación, incluyendo la ruta del archivo creado.
+        
+        Ejemplo:
+            create_workbook_tool("C:/datos/nuevo_libro.xlsx")
         """
         try:
             wb = create_workbook(filename, overwrite)
@@ -4336,33 +4369,33 @@ if HAS_MCP:
             return {
                 "success": True,
                 "file_path": filename,
-                "message": f"Excel file successfully created: {filename}"
+                "message": f"Archivo Excel creado correctamente: {filename}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating Excel file: {e}"
+                "message": f"Error al crear archivo Excel: {e}"
             }
     
     @mcp.tool(description="Abre un fichero Excel existente")
     def open_workbook_tool(filename):
-        """Open an existing Excel file.
-
-        This function opens an existing ``.xlsx`` or ``.xls`` file so it can be manipulated.
-        Use this before performing any operation on an existing file.
-
+        """Abre un fichero Excel existente
+        
+        Esta función permite abrir un archivo Excel (.xlsx, .xls) existente para su manipulación.
+        Es necesario usar esta función antes de realizar cualquier operación sobre un archivo existente.
+        
         Args:
-            filename (str): Full path and name of the Excel file to open.
-
+            filename (str): Ruta completa y nombre del archivo Excel a abrir.
+            
         Returns:
-            dict: Information about the opened file including sheet count and other properties.
-
+            dict: Información sobre el archivo abierto, incluyendo número de hojas y otras propiedades.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-
-        Example:
-            open_workbook_tool("C:/data/sales_report.xlsx")
+            FileNotFoundError: Si el archivo especificado no existe.
+            
+        Ejemplo:
+            open_workbook_tool("C:/datos/informe_ventas.xlsx")
         """
         try:
             wb = open_workbook(filename)
@@ -4374,31 +4407,33 @@ if HAS_MCP:
                 "file_path": filename,
                 "sheets": sheet_names,
                 "sheet_count": len(sheet_names),
-                "message": f"Excel file successfully opened: {filename}"
+                "message": f"Archivo Excel abierto correctamente: {filename}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error opening Excel file: {e}"
+                "message": f"Error al abrir archivo Excel: {e}"
             }
     
     @mcp.tool(description="Guarda el Workbook en disco")
     def save_workbook_tool(filename, new_filename=None):
-        """Save the workbook to disk.
-
-        Use this function after modifying a workbook to persist the changes.
-
+        """Guarda el Workbook en disco
+        
+        Esta función permite guardar un archivo Excel que ha sido modificado.
+        Es importante llamar a esta función después de realizar cambios para asegurar que estos se persistan.
+        
         Args:
-            filename (str): Full path and name of the Excel file to save.
-            new_filename (str, optional): If provided, save the file under a new name ("Save As"). Defaults to ``None``.
-
+            filename (str): Ruta completa y nombre del archivo Excel a guardar.
+            new_filename (str, optional): Si se proporciona, guarda el archivo con un nuevo nombre
+                                          (equivalente a 'Guardar como'). Por defecto es None.
+        
         Returns:
-            dict: Information about the operation result including the saved file path.
-
-        Example:
-            save_workbook_tool("C:/data/report.xlsx")
-            save_workbook_tool("C:/data/report.xlsx", "C:/data/report_backup.xlsx")  # Save As
+            dict: Información sobre el resultado de la operación, incluyendo la ruta donde se guardó el archivo.
+        
+        Ejemplo:
+            save_workbook_tool("C:/datos/informe.xlsx")
+            save_workbook_tool("C:/datos/informe.xlsx", "C:/datos/informe_backup.xlsx") # Guardar como
         """
         try:
             wb = open_workbook(filename)
@@ -4409,33 +4444,33 @@ if HAS_MCP:
                 "success": True,
                 "original_file": filename,
                 "saved_file": saved_path,
-                "message": f"Excel file successfully saved: {saved_path}"
+                "message": f"Archivo Excel guardado correctamente: {saved_path}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error saving Excel file: {e}"
+                "message": f"Error al guardar archivo Excel: {e}"
             }
     
     @mcp.tool(description="Lista las hojas disponibles en un archivo Excel")
     def list_sheets_tool(filename):
-        """List the worksheets available in an Excel file.
-
-        This function returns all worksheets contained in an Excel workbook and is useful
-        to get an overview before working with the file.
-
+        """Lista las hojas disponibles en un archivo Excel
+        
+        Esta función muestra todas las hojas de cálculo que contiene un archivo Excel.
+        Es útil para obtener una visión general del contenido del libro antes de trabajar con él.
+        
         Args:
-            filename (str): Full path and name of the Excel file to inspect.
-
+            filename (str): Ruta completa y nombre del archivo Excel a examinar.
+            
         Returns:
-            dict: Dictionary with the sheet names and their positions in the workbook.
-
+            dict: Diccionario con la lista de nombres de hojas y sus posiciones en el libro.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-
-        Example:
-            list_sheets_tool("C:/data/financial_report.xlsx")  # Returns: {"sheets": ["Sales", "Costs", "Summary"]}
+            FileNotFoundError: Si el archivo especificado no existe.
+            
+        Ejemplo:
+            list_sheets_tool("C:/datos/informe_financiero.xlsx")  # Devuelve: {"sheets": ["Ventas", "Gastos", "Resumen"]}
         """
         try:
             wb = open_workbook(filename)
@@ -4456,30 +4491,30 @@ if HAS_MCP:
                 "message": f"Error al listar hojas: {e}"
             }
     
-    # Register basic worksheet manipulation functions
-    @mcp.tool(description="Adds a new empty sheet")
+    # Registrar funciones básicas de manipulación de hojas
+    @mcp.tool(description="Añade una nueva hoja vacía")
     def add_sheet_tool(filename, sheet_name, index=None):
-        """Add a new empty worksheet.
-
-        This function inserts a new blank worksheet into an existing Excel workbook.
-        You can specify the position where the sheet should be inserted.
-
+        """Añade una nueva hoja vacía
+        
+        Esta función permite agregar una nueva hoja de cálculo vacía a un libro de Excel existente.
+        Puedes especificar la posición donde quieres insertar la nueva hoja.
+        
         Args:
-            filename (str): Full path and name of the Excel file.
-            sheet_name (str): Name for the new sheet.
-            index (int, optional): Position where the sheet will be inserted (``0`` is the first position).
-                                 If ``None`` the sheet is added at the end. Default is ``None``.
-
+            filename (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre para la nueva hoja.
+            index (int, optional): Posición donde insertar la hoja (0 es la primera posición).
+                                 Si es None, se añade al final. Por defecto es None.
+        
         Returns:
-            dict: Information about the operation including the updated list of sheets.
-
+            dict: Información sobre el resultado de la operación, incluyendo la lista actualizada de hojas.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetExistsError: If a sheet with the same name already exists.
-
-        Example:
-            add_sheet_tool("C:/data/report.xlsx", "New Summary")  # Add at the end
-            add_sheet_tool("C:/data/report.xlsx", "Cover", 0)  # Add as first sheet
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetExistsError: Si ya existe una hoja con el mismo nombre.
+            
+        Ejemplo:
+            add_sheet_tool("C:/datos/informe.xlsx", "Nuevo Resumen")  # Añade al final
+            add_sheet_tool("C:/datos/informe.xlsx", "Portada", 0)  # Añade como primera hoja
         """
         try:
             wb = open_workbook(filename)
@@ -4495,36 +4530,37 @@ if HAS_MCP:
                 "sheet_name": sheet_name,
                 "sheet_index": sheets.index(sheet_name),
                 "all_sheets": sheets,
-                "message": f"Sheet '{sheet_name}' added successfully"
+                "message": f"Hoja '{sheet_name}' añadida correctamente"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error adding sheet: {e}"
+                "message": f"Error al añadir hoja: {e}"
             }
     
-    @mcp.tool(description="Delete the indicated sheet")
+    @mcp.tool(description="Elimina la hoja indicada")
     def delete_sheet_tool(filename, sheet_name):
-        """Delete the indicated worksheet.
-
-        This function removes a specific worksheet from an Excel workbook. Use with care
-        because once the file is saved the deletion is permanent.
-
+        """
+        Elimina la hoja indicada
+        
+        Esta función permite eliminar una hoja de cálculo específica de un libro Excel.
+        Ten cuidado al usar esta función, ya que la eliminación es permanente una vez guardado el archivo.
+        
         Args:
-            filename (str): Full path and name of the Excel file.
-            sheet_name (str): Name of the worksheet to delete.
-
+            filename (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre de la hoja que se desea eliminar.
+            
         Returns:
-            dict: Information about the operation including the updated list of sheets.
-
+            dict: Información sobre el resultado de la operación, incluyendo la lista actualizada de hojas.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If the specified sheet does not exist.
-            ValueError: If attempting to delete the only sheet in the workbook.
-
-        Example:
-            delete_sheet_tool("C:/data/report.xlsx", "Draft")
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja especificada.
+            ValueError: Si se intenta eliminar la única hoja del libro (Excel requiere al menos una hoja).
+            
+        Ejemplo:
+            delete_sheet_tool("C:/datos/informe.xlsx", "Borrador")
         """
         try:
             wb = open_workbook(filename)
@@ -4540,36 +4576,37 @@ if HAS_MCP:
                 "deleted_sheet": sheet_name,
                 "remaining_sheets": remaining_sheets,
                 "remaining_count": len(remaining_sheets),
-                "message": f"Sheet '{sheet_name}' successfully deleted"
+                "message": f"Hoja '{sheet_name}' eliminada correctamente"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error deleting sheet: {e}"
+                "message": f"Error al eliminar hoja: {e}"
             }
     
-    @mcp.tool(description="Rename a sheet")
+    @mcp.tool(description="Renombra una hoja")
     def rename_sheet_tool(filename, old_name, new_name):
-        """Rename a worksheet.
-
-        This function changes the name of an existing worksheet in an Excel workbook.
-
+        """
+        Renombra una hoja
+        
+        Esta función permite cambiar el nombre de una hoja de cálculo existente en un libro Excel.
+        
         Args:
-            filename (str): Full path and name of the Excel file.
-            old_name (str): Current name of the sheet to rename.
-            new_name (str): New name for the sheet.
-
+            filename (str): Ruta completa y nombre del archivo Excel.
+            old_name (str): Nombre actual de la hoja que se desea renombrar.
+            new_name (str): Nuevo nombre para la hoja.
+            
         Returns:
-            dict: Information about the operation including the updated list of sheets.
-
+            dict: Información sobre el resultado de la operación, incluyendo la lista actualizada de hojas.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If no sheet exists with the original name.
-            SheetExistsError: If a sheet with the new name already exists.
-
-        Example:
-            rename_sheet_tool("C:/data/report.xlsx", "Sheet1", "Executive Summary")
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja con el nombre original.
+            SheetExistsError: Si ya existe una hoja con el nuevo nombre.
+            
+        Ejemplo:
+            rename_sheet_tool("C:/datos/informe.xlsx", "Hoja1", "Resumen Ejecutivo")
         """
         try:
             wb = open_workbook(filename)
@@ -4585,59 +4622,60 @@ if HAS_MCP:
                 "old_name": old_name,
                 "new_name": new_name,
                 "all_sheets": sheets,
-                "message": f"Sheet renamed from '{old_name}' to '{new_name}'"
+                "message": f"Hoja renombrada de '{old_name}' a '{new_name}'"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error renaming sheet: {e}"
+                "message": f"Error al renombrar hoja: {e}"
             }
     
-    # Register basic writing functions
-    @mcp.tool(description="Write a two-dimensional array of values or formulas")
+    # Registrar funciones básicas de escritura
+    @mcp.tool(description="Escribe un array bidimensional de valores o fórmulas")
     def write_sheet_data_tool(file_path, sheet_name, start_cell, data):
-        """Write a two-dimensional array of values or formulas to a worksheet.
-
-        This function writes data to a range of cells starting at ``start_cell``.
-        It is ideal for inserting tables of data or matrices of values.
-
+        """
+        Escribe un array bidimensional de valores o fórmulas en una hoja de Excel
+        
+        Esta función permite escribir datos en un rango de celdas de una hoja Excel, comenzando desde
+        la celda especificada. Es ideal para insertar tablas de datos o matrices de valores.
+        
         Args:
-            file_path (str): Full path and name of the Excel file.
-            sheet_name (str): Name of the worksheet where data will be written.
-            start_cell (str): Starting cell (e.g. ``"A1"``).
-            data (list): Two-dimensional list with the data to write.
-                        Example: [["Name", "Age"], ["John", 25], ["Mary", 30]]
-
+            file_path (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre de la hoja donde se escribirán los datos.
+            start_cell (str): Celda inicial desde donde comenzar a escribir (ej: "A1").
+            data (list): Array bidimensional (lista de listas) con los datos a escribir.
+                        Ejemplo: [["Nombre", "Edad"], ["Juan", 25], ["María", 30]]
+        
         Returns:
-            dict: Information about the operation, including the modified range.
-
+            dict: Información sobre el resultado de la operación, incluyendo el rango modificado.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If the specified sheet does not exist.
-            CellReferenceError: If the cell reference is not valid.
-
-        Example:
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja especificada.
+            CellReferenceError: Si la referencia de celda no es válida.
+            
+        Ejemplo:
             write_sheet_data_tool(
-                "C:/data/report.xlsx",
-                "Data",
-                "B2",
-                [["Quarter", "Sales", "Costs"], ["Q1", 5000, 3000], ["Q2", 6200, 3100]]
+                "C:/datos/informe.xlsx", 
+                "Datos", 
+                "B2", 
+                [["Trimestre", "Ventas", "Gastos"], ["Q1", 5000, 3000], ["Q2", 6200, 3100]]
             )
         """
         try:
-            # Validate arguments
+            # Validar argumentos
             if not isinstance(data, list):
-                raise ValueError("The 'data' parameter must be a list")
-
-            # Open the file and get the sheet
+                raise ValueError("El parámetro 'data' debe ser una lista")
+            
+            # Abrir el archivo y obtener la hoja
             wb = openpyxl.load_workbook(file_path)
             ws = get_sheet(wb, sheet_name)
-
-            # Write the data
+            
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
-
-            # Save and close
+            
+            # Guardar y cerrar
             wb.save(file_path)
             
             return {
@@ -4647,48 +4685,50 @@ if HAS_MCP:
                 "start_cell": start_cell,
                 "rows_written": len(data),
                 "columns_written": max([len(row) if isinstance(row, list) else 1 for row in data], default=0),
-                "message": f"Data successfully written starting at {start_cell}"
+                "message": f"Datos escritos correctamente desde {start_cell}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error writing data: {e}"
+                "message": f"Error al escribir datos: {e}"
             }
     
-    @mcp.tool(description="Update a single cell")
+    @mcp.tool(description="Actualiza individualmente una celda")
     def update_cell_tool(file_path, sheet_name, cell, value_or_formula):
-        """Update the value or formula of a specific cell.
-
-        This function modifies a single cell in a worksheet. It can be used for both values and formulas.
-
+        """
+        Actualiza el valor o fórmula de una celda específica en una hoja de Excel
+        
+        Esta función permite modificar el contenido de una celda individual en una hoja de Excel.
+        Puede usarse tanto para valores normales como para fórmulas.
+        
         Args:
-            file_path (str): Full path and name of the Excel file.
-            sheet_name (str): Name of the sheet containing the cell to update.
-            cell (str): Reference of the cell to update (e.g. ``"B5"``).
-            value_or_formula (str | int | float | bool): Value or formula to set. Formulas must start with ``=``.
-
+            file_path (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre de la hoja que contiene la celda a actualizar.
+            cell (str): Referencia de la celda a actualizar (ej: "B5").
+            value_or_formula (str/int/float/bool): Valor o fórmula a establecer. Las fórmulas deben comenzar con "=".
+        
         Returns:
-            dict: Information about the operation including the modified cell.
-
+            dict: Información sobre el resultado de la operación, incluyendo la celda modificada.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If the specified sheet does not exist.
-            CellReferenceError: If the cell reference is not valid.
-
-        Example:
-            update_cell_tool("C:/data/report.xlsx", "Sales", "C4", 5280.50)  # Numeric value
-            update_cell_tool("C:/data/report.xlsx", "Sales", "D4", "=SUM(A1:A10)")  # Formula
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja especificada.
+            CellReferenceError: Si la referencia de celda no es válida.
+            
+        Ejemplo:
+            update_cell_tool("C:/datos/informe.xlsx", "Ventas", "C4", 5280.50)  # Valor numérico
+            update_cell_tool("C:/datos/informe.xlsx", "Ventas", "D4", "=SUM(A1:A10)")  # Fórmula
         """
         try:
-            # Open the file and get the sheet
+            # Abrir el archivo y obtener la hoja
             wb = openpyxl.load_workbook(file_path)
             ws = get_sheet(wb, sheet_name)
             
-            # Update the cell
+            # Actualizar la celda
             update_cell(ws, cell, value_or_formula)
             
-            # Save and close
+            # Guardar y cerrar
             wb.save(file_path)
             
             return {
@@ -4697,59 +4737,61 @@ if HAS_MCP:
                 "sheet_name": sheet_name,
                 "cell": cell,
                 "value": value_or_formula,
-                "message": f"Cell {cell} successfully updated in sheet {sheet_name}"
+                "message": f"Celda {cell} actualizada correctamente en la hoja {sheet_name}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error updating cell: {e}"
+                "message": f"Error al actualizar celda: {e}"
             }
     
-    # Register advanced functions
-    @mcp.tool(description="Define a range as a formatted table on an Excel sheet")
+    # Registrar funciones avanzadas
+    @mcp.tool(description="Define un rango como Tabla con estilo en una hoja de Excel")
     def add_table_tool(file_path, sheet_name, table_name, cell_range, style=None):
-        """Define a range as a formatted table in Excel.
-
-        This function converts a cell range into an Excel table with formatting so the
-        data can be filtered and sorted automatically.
-
+        """
+        Define un rango como Tabla con estilo en Excel
+        
+        Esta función convierte un rango de celdas en una tabla Excel con formato,
+        lo que permite filtrar, ordenar y dar formato automáticamente a los datos.
+        
         Args:
-            file_path (str): Full path and name of the Excel file.
-            sheet_name (str): Name of the sheet where the table will be created.
-            table_name (str): Name for the table (must be unique within the workbook).
-            cell_range (str): Cell range for the table in Excel format (e.g. ``"A1:D10"``).
-            style (str, optional): Table style to apply (e.g. ``"TableStyleMedium9"``). If ``None`` the default style is used.
-
+            file_path (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre de la hoja donde se creará la tabla.
+            table_name (str): Nombre para la tabla (debe ser único en el libro).
+            cell_range (str): Rango de celdas para la tabla en formato Excel (ej: "A1:D10").
+            style (str, optional): Estilo de tabla a aplicar (ej: "TableStyleMedium9"). Si es None,
+                                 se utiliza el estilo predeterminado. Por defecto es None.
+        
         Returns:
-            dict: Information about the operation including table details.
-
+            dict: Información sobre el resultado de la operación, incluyendo los detalles de la tabla creada.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If the specified sheet does not exist.
-            RangeError: If the provided range is not valid.
-            TableError: If a table with the same name already exists or another table issue occurs.
-
-        Example:
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja especificada.
+            RangeError: Si el rango especificado no es válido.
+            TableError: Si ya existe una tabla con el mismo nombre o hay otro problema con la tabla.
+            
+        Ejemplo:
             add_table_tool(
-                "C:/data/sales.xlsx",
-                "Data",
-                "RegionalPrices",
-                "B3:F15",
+                "C:/datos/ventas.xlsx", 
+                "Datos", 
+                "TablaPreciosRegionales", 
+                "B3:F15", 
                 "TableStyleMedium2"
             )
         """
         try:
-            # Open the file
+            # Abrir el archivo
             wb = openpyxl.load_workbook(file_path)
             
-            # Get the sheet
+            # Obtener la hoja
             ws = get_sheet(wb, sheet_name)
             
-            # Add the table
+            # Añadir la tabla
             table = add_table(ws, table_name, cell_range, style)
             
-            # Save changes
+            # Guardar cambios
             wb.save(file_path)
             
             return {
@@ -4759,66 +4801,69 @@ if HAS_MCP:
                 "table_name": table_name,
                 "range": cell_range,
                 "style": style,
-                "message": f"Table '{table_name}' successfully created in range {cell_range}"
+                "message": f"Tabla '{table_name}' creada correctamente en el rango {cell_range}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating table: {e}"
+                "message": f"Error al crear tabla: {e}"
             }
     
-    @mcp.tool(description="Insert a native chart into an Excel sheet with multiple customization options")
+    @mcp.tool(description="Inserta un gráfico nativo en una hoja de Excel con múltiples opciones de personalización")
     def add_chart_tool(file_path, sheet_name, chart_type, data_range, title=None, position=None, style=None, theme=None, custom_palette=None):
-        """Insert a professional native chart into a worksheet.
-
-        This function creates a chart based on worksheet data with multiple customization
-        options to build professional visualizations directly in Excel.
-
+        """
+        Inserta un gráfico profesional nativo en una hoja de Excel
+        
+        Esta función crea un gráfico basado en datos de la hoja de cálculo, con múltiples opciones
+        de personalización para crear visualizaciones profesionales directamente en Excel.
+        
         Args:
-            file_path (str): Full path and name of the Excel file.
-            sheet_name (str): Name of the sheet where the chart will be inserted.
-            chart_type (str): Type of chart to create. Options include ``'line'``, ``'bar'``, ``'column'``, ``'pie'``, ``'scatter'``,
-                             ``'area'``, ``'doughnut'``, ``'radar'``, ``'surface'``, ``'stock'``.
-            data_range (str): Range with the data for the chart in Excel format (e.g. ``"A1:D10"``).
-            title (str, optional): Title for the chart. Defaults to ``None``.
-            position (str, optional): Position to insert the chart in ``A1:F15`` format. Defaults to ``None`` for an automatic position.
-            style (int, optional): Numeric chart style (1-48). Defaults to ``None``.
-            theme (str, optional): Color theme for the chart. Defaults to ``None``.
-            custom_palette (list, optional): List of custom colors in hex (``#RRGGBB``). Defaults to ``None``.
-
+            file_path (str): Ruta completa y nombre del archivo Excel.
+            sheet_name (str): Nombre de la hoja donde se insertará el gráfico.
+            chart_type (str): Tipo de gráfico a crear. Opciones: 'line', 'bar', 'column', 'pie', 'scatter', 
+                             'area', 'doughnut', 'radar', 'surface', 'stock'.
+            data_range (str): Rango de celdas con los datos para el gráfico en formato Excel (ej: "A1:D10").
+            title (str, optional): Título para el gráfico. Por defecto es None.
+            position (str, optional): Posición donde insertar el gráfico en formato "A1:F15". 
+                                     Si es None, se usa una posición por defecto. Por defecto es None.
+            style (int, optional): Estilo numérico del gráfico (1-48). Por defecto es None.
+            theme (str, optional): Tema de colores para el gráfico. Por defecto es None.
+            custom_palette (list, optional): Lista de colores personalizados en formato hex (#RRGGBB). 
+                                           Por defecto es None.
+        
         Returns:
-            dict: Information about the operation including details of the created chart.
-
+            dict: Información sobre el resultado de la operación, incluyendo detalles del gráfico creado.
+            
         Raises:
-            FileNotFoundError: If the specified file does not exist.
-            SheetNotFoundError: If the specified sheet does not exist.
-            RangeError: If the data range is not valid.
-            ChartError: If there is a problem creating the chart.
-
-        Example:
+            FileNotFoundError: Si el archivo especificado no existe.
+            SheetNotFoundError: Si no existe la hoja especificada.
+            RangeError: Si el rango de datos especificado no es válido.
+            ChartError: Si hay un problema con la creación del gráfico.
+            
+        Ejemplo:
             add_chart_tool(
-                "C:/data/sales.xlsx",
-                "Data",
-                "column",
-                "A1:B10",
-                title="Quarterly Sales",
+                "C:/datos/ventas.xlsx", 
+                "Datos", 
+                "column", 
+                "A1:B10", 
+                title="Ventas por Trimestre",
                 position="E1:J15",
                 style=12,
                 custom_palette=["#4472C4", "#ED7D31", "#A5A5A5"]
             )
         """
         try:
-            # Open the file
+            # Abrir el archivo
             wb = openpyxl.load_workbook(file_path)
             
-            # Create chart
+            # Crear gráfico
             chart_id, chart = add_chart(wb, sheet_name, chart_type, data_range, title, position, style, theme, custom_palette)
             
-            # Save changes
+            # Guardar cambios
             wb.save(file_path)
             
-            # Extract chart type for a better response message
+            # Extraer tipo de gráfico para mejor mensaje de respuesta
             chart_type_display = chart_type
             if chart_type.lower() == "col":
                 chart_type_display = "column"
@@ -4832,63 +4877,64 @@ if HAS_MCP:
                 "data_range": data_range,
                 "title": title,
                 "position": position,
-                "message": f"Chart '{chart_type_display}' successfully created with ID {chart_id}"
+                "message": f"Gráfico '{chart_type_display}' creado correctamente con ID {chart_id}"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating chart: {e}"
+                "message": f"Error al crear gráfico: {e}"
             }
     
-    # Register new combined functions
-    @mcp.tool(description="Create a sheet with data in one step")
+    # Registrar nuevas funciones combinadas
+    @mcp.tool(description="Crea una hoja con datos en un solo paso")
     def create_sheet_with_data_tool(file_path, sheet_name, data, overwrite=False):
-        """Create an Excel file with a single sheet and data in one step.
-
+        """
+        Crea un archivo Excel con una hoja y datos en un solo paso.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            file_path (str): Path to the Excel file to create.
-            sheet_name (str): Name of the sheet to create.
-            data (list): Two-dimensional array with the data.
-            overwrite (bool): If ``True`` overwrite the file if it already exists.
-
+            file_path (str): Ruta al archivo Excel a crear
+            sheet_name (str): Nombre de la hoja a crear
+            data (list): Array bidimensional con los datos
+            overwrite (bool): Si es True, sobrescribe el archivo si existe
+            
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         try:
-            # Check if the file exists
+            # Verificar si el archivo existe
             file_exists = os.path.exists(file_path)
             
             if file_exists and not overwrite:
-                raise FileExistsError(f"The file '{file_path}' already exists. Use overwrite=True to overwrite.")
+                raise FileExistsError(f"El archivo '{file_path}' ya existe. Use overwrite=True para sobrescribir.")
             
-            # Create or open the file
+            # Crear o abrir el archivo
             if not file_exists or overwrite:
                 wb = openpyxl.Workbook()
-                # Remove the default sheet if it exists
+                # Eliminar la hoja predeterminada si existe
                 if "Sheet" in wb.sheetnames:
                     del wb["Sheet"]
             else:
                 wb = openpyxl.load_workbook(file_path)
             
-            # Check if the sheet already exists
+            # Verificar si la hoja ya existe
             if sheet_name in wb.sheetnames:
                 if overwrite:
-                    # Delete the existing sheet
+                    # Eliminar la hoja existente
                     del wb[sheet_name]
                 else:
-                    raise SheetExistsError(f"The sheet '{sheet_name}' already exists. Use overwrite=True to overwrite.")
+                    raise SheetExistsError(f"La hoja '{sheet_name}' ya existe. Use overwrite=True para sobrescribir.")
             
-            # Create the sheet
+            # Crear la hoja
             ws = wb.create_sheet(sheet_name)
             
-            # Write the data
+            # Escribir los datos
             if data:
                 write_sheet_data(ws, "A1", data)
             
-            # Save the file
+            # Guardar el archivo
             wb.save(file_path)
             
             return {
@@ -4897,77 +4943,78 @@ if HAS_MCP:
                 "sheet_name": sheet_name,
                 "rows_written": len(data) if data else 0,
                 "columns_written": max([len(row) if isinstance(row, list) else 1 for row in data], default=0) if data else 0,
-                "message": f"File created with sheet '{sheet_name}' and data"
+                "message": f"Archivo creado con hoja '{sheet_name}' y datos"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating sheet with data: {e}"
+                "message": f"Error al crear hoja con datos: {e}"
             }
     
-    @mcp.tool(description="Create a formatted table with data in one step")
+    @mcp.tool(description="Crea una tabla formateada con datos en un solo paso")
     def create_formatted_table_tool(file_path, sheet_name, start_cell, data, table_name, table_style="TableStyleMedium9", formats=None):
-        """Create a formatted table with data in one step.
-
+        """
+        Crea una tabla formateada con datos en un solo paso.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            file_path (str): Path to the Excel file.
-            sheet_name (str): Name of the sheet.
-            start_cell (str): Starting cell (e.g. ``"A1"``).
-            data (list): Two-dimensional array with the data.
-            table_name (str): Name for the table.
-            table_style (str): Table style.
-            formats (dict): Dictionary with formats to apply:
+            file_path (str): Ruta al archivo Excel
+            sheet_name (str): Nombre de la hoja
+            start_cell (str): Celda inicial (ej. "A1")
+            data (list): Array bidimensional con los datos
+            table_name (str): Nombre para la tabla
+            table_style (str): Estilo de la tabla
+            formats (dict): Diccionario con formatos a aplicar:
                 {
-                    "A2:A10": "#,##0.00",  # Numeric format
-                    "B2:B10": {"bold": True, "fill_color": "FFFF00"}  # Style
+                    "A2:A10": "#,##0.00",  # Formato numérico
+                    "B2:B10": {"bold": True, "fill_color": "FFFF00"}  # Estilo
                 }
-
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         try:
-            # Check if the file exists, if not, create it
+            # Verificar si el archivo existe, si no, crearlo
             if not os.path.exists(file_path):
                 wb = openpyxl.Workbook()
                 if "Sheet" in wb.sheetnames and sheet_name != "Sheet":
-                    # Rename the default sheet
+                    # Renombrar la hoja predeterminada
                     wb["Sheet"].title = sheet_name
             else:
                 wb = openpyxl.load_workbook(file_path)
                 
-                # Create the sheet if it doesn't exist
+                # Crear la hoja si no existe
                 if sheet_name not in wb.sheetnames:
                     wb.create_sheet(sheet_name)
             
-            # Get the sheet
+            # Obtener la hoja
             ws = wb[sheet_name]
             
-            # Write the data
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
             
-            # Determine the table range
+            # Determinar el rango de la tabla
             start_row, start_col = ExcelRange.parse_cell_ref(start_cell)
             end_row = start_row + len(data) - 1
             end_col = start_col + (len(data[0]) if data and len(data) > 0 else 0) - 1
             table_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
             
-            # Create the table
+            # Crear la tabla
             add_table(ws, table_name, table_range, table_style)
             
-            # Apply formats if provided
+            # Aplicar formatos si se proporcionan
             if formats:
                 for cell_range, fmt in formats.items():
                     if isinstance(fmt, dict):
-                        # It's a style
+                        # Es un estilo
                         apply_style(ws, cell_range, fmt)
                     else:
-                        # It's a number format
+                        # Es un formato numérico
                         apply_number_format(ws, cell_range, fmt)
             
-            # Save the file
+            # Guardar el archivo
             wb.save(file_path)
             
             return {
@@ -4977,82 +5024,83 @@ if HAS_MCP:
                 "table_name": table_name,
                 "table_range": table_range,
                 "table_style": table_style,
-                "message": f"Table '{table_name}' created and formatted successfully"
+                "message": f"Tabla '{table_name}' creada y formateada correctamente"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating formatted table: {e}"
+                "message": f"Error al crear tabla formateada: {e}"
             }
     
-    @mcp.tool(description="Create a chart from new data in one step")
+    @mcp.tool(description="Crea un gráfico a partir de datos nuevos en un solo paso")
     def create_chart_from_data_tool(file_path, sheet_name, data, chart_type, position=None, title=None, style=None):
-        """Create a chart from new data in one step.
-
+        """
+        Crea un gráfico a partir de datos nuevos en un solo paso.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            file_path (str): Path to the Excel file.
-            sheet_name (str): Name of the sheet.
-            data (list): Two-dimensional array with the data for the chart.
-            chart_type (str): Chart type (``'column'``, ``'bar'``, ``'line'``, ``'pie'``, etc.).
-            position (str): Cell where the chart will be placed (e.g. ``"E1"``).
-            title (str): Chart title.
-            style: Chart style.
-
+            file_path (str): Ruta al archivo Excel
+            sheet_name (str): Nombre de la hoja
+            data (list): Array bidimensional con los datos para el gráfico
+            chart_type (str): Tipo de gráfico ('column', 'bar', 'line', 'pie', etc.)
+            position (str): Celda donde colocar el gráfico (ej. "E1")
+            title (str): Título del gráfico
+            style: Estilo del gráfico
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         try:
-            # Check if the file exists, if not, create it
+            # Verificar si el archivo existe, si no, crearlo
             if not os.path.exists(file_path):
                 wb = openpyxl.Workbook()
                 if "Sheet" in wb.sheetnames and sheet_name != "Sheet":
-                    # Rename the default sheet
+                    # Renombrar la hoja predeterminada
                     wb["Sheet"].title = sheet_name
             else:
                 wb = openpyxl.load_workbook(file_path)
                 
-                # Create the sheet if it doesn't exist
+                # Crear la hoja si no existe
                 if sheet_name not in wb.sheetnames:
                     wb.create_sheet(sheet_name)
             
-            # Get the sheet
+            # Obtener la hoja
             ws = wb[sheet_name]
             
-            # Find a free area for the data
-            # Search from the left to place the source data
-            # (The common convention is to put data on the left and charts on the right)
+            # Encontrar una zona libre para los datos
+            # Buscar por la parte izquierda para colocar los datos de origen
+            # (La convención común es poner datos a la izquierda y gráficos a la derecha)
             start_cell = "A1"
             
-            # Check if there is already data in that area
+            # Comprobar si ya hay datos en esa zona
             if ws["A1"].value is not None:
-                # Find the first empty column
+                # Buscar la primera columna vacía
                 col = 1
                 while ws.cell(row=1, column=col).value is not None:
                     col += 1
                 start_cell = f"{get_column_letter(col)}1"
             
-            # Write the data
+            # Escribir los datos
             write_sheet_data(ws, start_cell, data)
             
-            # Determine the data range for the chart
+            # Determinar el rango de datos para el gráfico
             start_row, start_col = ExcelRange.parse_cell_ref(start_cell)
             end_row = start_row + len(data) - 1
             end_col = start_col + (len(data[0]) if data and len(data) > 0 else 0) - 1
             data_range = ExcelRange.range_to_a1(start_row, start_col, end_row, end_col)
             
-            # Determine chart position if not provided
+            # Determinar posición para el gráfico si no se proporciona
             if not position:
-                # Place the chart to the right of the data with a space
+                # Colocar el gráfico a la derecha de los datos con un espacio
                 chart_col = end_col + 2  # Dejar una columna de espacio
                 position = f"{get_column_letter(chart_col + 1)}1"
             
-            # Create the chart
+            # Crear el gráfico
             chart_id, _ = add_chart(wb, sheet_name, chart_type, data_range, title, position, style)
             
-            # Save the file
+            # Guardar el archivo
             wb.save(file_path)
             
             return {
@@ -5063,25 +5111,26 @@ if HAS_MCP:
                 "chart_id": chart_id,
                 "chart_type": chart_type,
                 "position": position,
-                "message": f"Chart '{chart_type}' successfully created from new data"
+                "message": f"Gráfico '{chart_type}' creado correctamente a partir de nuevos datos"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error creating chart with data: {e}"
+                "message": f"Error al crear gráfico con datos: {e}"
             }
     
     
-    @mcp.tool(description="Update an existing report with new data")
+    @mcp.tool(description="Actualiza un informe existente con nuevos datos")
     def update_report_tool(file_path, data_updates, config_updates=None, recalculate=True):
-        """Update an existing report with new data and configuration changes.
-
+        """
+        Actualiza un informe existente con nuevos datos y configuraciones.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            file_path (str): Path to the Excel file to update.
-            data_updates (dict): Dictionary with data updates:
+            file_path (str): Ruta al archivo Excel a actualizar
+            data_updates (dict): Diccionario con actualizaciones de datos:
                 {
                     "sheet_name": {
                         "range1": data_list1,
@@ -5089,12 +5138,12 @@ if HAS_MCP:
                         ...
                     }
                 }
-            config_updates (dict, optional): Configuration updates:
+            config_updates (dict, opcional): Actualizaciones de configuración:
                 {
                     "charts": [
                         {
                             "sheet": "sheet_name",
-                            "id": 0,  # or "title"
+                            "id": 0,  # o "title"
                             "title": "New Title",
                             "style": "new_style"
                         }
@@ -5103,79 +5152,79 @@ if HAS_MCP:
                         {
                             "sheet": "sheet_name",
                             "name": "TableName",
-                            "range": "A1:D20"  # New range
+                            "range": "A1:D20"  # Nuevo rango
                         }
                     ]
                 }
-            recalculate (bool): If ``True`` recalculate all formulas.
-
+            recalculate (bool): Si es True, recalcula todas las fórmulas
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         try:
-            # Verify that the file exists
+            # Verificar que el archivo existe
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"The file does not exist: {file_path}")
+                raise FileNotFoundError(f"El archivo no existe: {file_path}")
             
-            # Open the file
+            # Abrir el archivo
             wb = openpyxl.load_workbook(file_path)
             
-            # Update data
+            # Actualizar datos
             for sheet_name, ranges in data_updates.items():
                 if sheet_name not in wb.sheetnames:
-                    logger.warning(f"Sheet '{sheet_name}' does not exist, it will be skipped")
+                    logger.warning(f"La hoja '{sheet_name}' no existe, se omitirá")
                     continue
                 
                 ws = wb[sheet_name]
                 
                 for range_str, data in ranges.items():
-                    # If the range is a single cell, extract the start cell
+                    # Si el rango es una sola celda, extraer la celda de inicio
                     if ':' not in range_str:
                         start_cell = range_str
                     else:
                         start_cell = range_str.split(':')[0]
                     
-                    # Write the data
+                    # Escribir los datos
                     write_sheet_data(ws, start_cell, data)
             
-            # Update settings
+            # Actualizar configuraciones
             if config_updates:
-                # Update tables
+                # Actualizar tablas
                 for table_config in config_updates.get("tables", []):
                     sheet_name = table_config["sheet"]
                     table_name = table_config["name"]
                     
                     if sheet_name not in wb.sheetnames:
-                        logger.warning(f"Sheet '{sheet_name}' does not exist to update the table '{table_name}'")
+                        logger.warning(f"La hoja '{sheet_name}' no existe para actualizar la tabla '{table_name}'")
                         continue
                     
                     ws = wb[sheet_name]
                     
-                    # Check if the table exists
+                    # Verificar si la tabla existe
                     if not hasattr(ws, 'tables') or table_name not in ws.tables:
-                        logger.warning(f"The table '{table_name}' does not exist on sheet '{sheet_name}'")
+                        logger.warning(f"La tabla '{table_name}' no existe en la hoja '{sheet_name}'")
                         continue
                     
-                    # Update the table range if provided
+                    # Actualizar rango de la tabla si se proporciona
                     if "range" in table_config:
                         refresh_table(ws, table_name, table_config["range"])
                 
-                # Update charts
+                # Actualizar gráficos
                 for chart_config in config_updates.get("charts", []):
                     sheet_name = chart_config["sheet"]
                     chart_id = chart_config["id"]
                     
                     if sheet_name not in wb.sheetnames:
-                        logger.warning(f"Sheet '{sheet_name}' does not exist to update the chart")
+                        logger.warning(f"La hoja '{sheet_name}' no existe para actualizar el gráfico")
                         continue
                     
                     ws = wb[sheet_name]
                     
-                    # Check if chart_id is an index or a title
+                    # Verificar si el chart_id es un índice o un título
                     if isinstance(chart_id, (int, str)) and str(chart_id).isdigit():
                         chart_idx = int(chart_id)
                     else:
-                        # Search the chart by title
+                        # Buscar el gráfico por título
                         chart_idx = None
                         for i, chart_rel in enumerate(ws._charts):
                             chart = chart_rel[0]
@@ -5184,10 +5233,10 @@ if HAS_MCP:
                                 break
                     
                     if chart_idx is None or chart_idx >= len(ws._charts):
-                        logger.warning(f"Chart with ID/title '{chart_id}' not found on sheet '{sheet_name}'")
+                        logger.warning(f"No se encontró el gráfico con ID/título '{chart_id}' en la hoja '{sheet_name}'")
                         continue
                     
-                    # Update chart properties
+                    # Actualizar propiedades del gráfico
                     chart = ws._charts[chart_idx][0]
                     
                     if "title" in chart_config:
@@ -5197,172 +5246,178 @@ if HAS_MCP:
                         try:
                             apply_chart_style(chart, chart_config["style"])
                         except Exception as style_error:
-                            logger.warning(f"Error applying style to chart: {style_error}")
+                            logger.warning(f"Error al aplicar estilo al gráfico: {style_error}")
             
-            # Recalculate formulas if requested
+            # Recalcular fórmulas si se solicita
             if recalculate:
-                # openpyxl has no direct method to recalculate
-                # In Excel, this happens automatically when opening the file
-                # Here we simply log that recalculation was requested
-                logger.info("Formula recalculation was requested (this will happen when the file is opened in Excel)")
+                # openpyxl no tiene un método directo para recalcular
+                # En Excel, esto se haría automáticamente al abrir el archivo
+                # Aquí simplemente registramos que se solicitó recalcular
+                logger.info("Se solicitó recalcular fórmulas (esto ocurrirá al abrir el archivo en Excel)")
             
-            # Save the file
+            # Guardar el archivo
             wb.save(file_path)
             
             return {
                 "success": True,
                 "file_path": file_path,
                 "sheets_updated": list(data_updates.keys()),
-                "message": f"Report successfully updated: {file_path}"
+                "message": f"Informe actualizado correctamente: {file_path}"
             }
         except Exception as e:
-            logger.error(f"Error updating report: {e}")
+            logger.error(f"Error al actualizar informe: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error updating report: {e}"
+                "message": f"Error al actualizar informe: {e}"
             }
     
-    @mcp.tool(description="Create a dynamic dashboard with multiple visualizations in one step")
+    @mcp.tool(description="Crea un dashboard dinámico con múltiples visualizaciones en un solo paso")
     def create_dashboard_tool(file_path, data, dashboard_config, overwrite=False):
-        """Create a dynamic dashboard with multiple visualizations in one step.
-
+        """
+        Crea un dashboard dinámico con múltiples visualizaciones en un solo paso.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            file_path (str): Path to the Excel file to create.
-            data (dict): Dictionary with data per sheet (see docs for format).
-            dashboard_config (dict): Dashboard configuration (see docs for format).
-            overwrite (bool): If ``True`` overwrite the file if it exists.
-
+            file_path (str): Ruta al archivo Excel a crear
+            data (dict): Diccionario con datos por hoja (ver documentación para formato)
+            dashboard_config (dict): Configuración del dashboard (ver documentación para formato)
+            overwrite (bool): Si es True, sobrescribe el archivo si existe
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         return create_dynamic_dashboard(file_path, data, dashboard_config, overwrite)
     
-    @mcp.tool(description="Create a report based on an Excel template, replacing data and updating charts")
+    @mcp.tool(description="Crea un informe basado en una plantilla Excel, sustituyendo datos y actualizando gráficos")
     def create_report_from_template_tool(template_file, output_file, data_mappings, chart_mappings=None, format_mappings=None):
-        """Create a report from an Excel template, replacing data and updating charts.
-
+        """
+        Crea un informe basado en una plantilla Excel, sustituyendo datos y actualizando gráficos.
+        
         Args:
-             **Emojis must never be included in text written to cells, labels, titles or charts.**
+             **Nunca deben incluirse emojis en los textos escritos en celdas, etiquetas, títulos o gráficos de Excel.**
 
-            template_file (str): Path to the Excel template.
-            output_file (str): Path where the generated report will be saved.
-            data_mappings (dict): Data mappings dictionary (see docs for format).
-            chart_mappings (dict, optional): Dictionary with chart updates.
-            format_mappings (dict, optional): Dictionary with formats to apply.
-
+            template_file (str): Ruta a la plantilla Excel
+            output_file (str): Ruta donde guardar el informe generado
+            data_mappings (dict): Diccionario con mapeos de datos (ver documentación para formato)
+            chart_mappings (dict, opcional): Diccionario con actualizaciones de gráficos
+            format_mappings (dict, opcional): Diccionario con formatos a aplicar
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         return create_report_from_template(template_file, output_file, data_mappings, chart_mappings, format_mappings)
     
-    @mcp.tool(description="Import data from multiple sources (CSV, JSON, SQL) into an Excel file")
+    @mcp.tool(description="Importa datos desde múltiples fuentes (CSV, JSON, SQL) a un archivo Excel")
     def import_data_tool(excel_file, import_config, sheet_name=None, start_cell="A1", create_tables=False):
-        """Import data from multiple sources (CSV, JSON, SQL) into an Excel file.
-
+        """
+        Importa datos desde múltiples fuentes (CSV, JSON, SQL) a un archivo Excel.
+        
         Args:
-            excel_file (str): Path to the Excel file where the data will be imported.
-            import_config (dict): Import configuration (see documentation for format).
-            sheet_name (str, optional): Default sheet name.
-            start_cell (str, optional): Default starting cell.
-            create_tables (bool, optional): If ``True`` create Excel tables for each dataset.
-
+            excel_file (str): Ruta al archivo Excel donde importar los datos
+            import_config (dict): Configuración de importación (ver documentación para formato)
+            sheet_name (str, opcional): Nombre de hoja predeterminado
+            start_cell (str, opcional): Celda inicial predeterminada
+            create_tables (bool, opcional): Si es True, crea tablas Excel
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         return import_multi_source_data(excel_file, import_config, sheet_name, start_cell, create_tables)
     
-    @mcp.tool(description="Export Excel data to multiple formats (CSV, JSON, PDF)")
+    @mcp.tool(description="Exporta datos de Excel a múltiples formatos (CSV, JSON, PDF)")
     def export_data_tool(excel_file, export_config):
-        """Export Excel data to multiple formats (CSV, JSON, PDF).
-
+        """
+        Exporta datos de Excel a múltiples formatos (CSV, JSON, PDF).
+        
         Args:
-            excel_file (str): Path to the source Excel file.
-            export_config (dict): Export configuration (see documentation for format).
-
+            excel_file (str): Ruta al archivo Excel de origen
+            export_config (dict): Configuración de exportación (ver documentación para formato)
+                
         Returns:
-            dict: Result of the operation.
+            dict: Resultado de la operación
         """
         return export_excel_data(excel_file, export_config)
     
-    @mcp.tool(description="Filter and extract data from a table or range as records")
+    @mcp.tool(description="Filtra y extrae datos de una tabla o rango en formato de registros")
     def filter_data_tool(file_path, sheet_name, range_str=None, table_name=None, filters=None):
-        """Filter and extract data from a table or range as records.
-
+        """
+        Filtra y extrae datos de una tabla o rango en formato de registros.
+        
         Args:
-            file_path (str): Path to the Excel file.
-            sheet_name (str): Name of the sheet.
-            range_str (str, optional): Range in ``A1:B5`` format (required if ``table_name`` is not provided).
-            table_name (str, optional): Table name (required if ``range_str`` is not provided).
-            filters (dict, optional): Filters to apply to the data:
+            file_path (str): Ruta al archivo Excel
+            sheet_name (str): Nombre de la hoja
+            range_str (str, opcional): Rango en formato A1:B5 (requerido si no se especifica table_name)
+            table_name (str, opcional): Nombre de la tabla (requerido si no se especifica range_str)
+            filters (dict, opcional): Filtros a aplicar a los datos:
                 {
-                    "field1": value1,               # Simple equality
-                    "field2": [value1, value2],      # List of allowed values
-                    "field3": {"gt": 100},           # Greater than
-                    "field4": {"lt": 50},            # Less than
-                    "field5": {"contains": "text"}   # Contains text
+                    "field1": value1,  # Igualdad simple
+                    "field2": [value1, value2],  # Lista de valores posibles
+                    "field3": {"gt": 100},  # Mayor que
+                    "field4": {"lt": 50},  # Menor que
+                    "field5": {"contains": "text"}  # Contiene texto
                 }
-
+                
         Returns:
-            dict: Result of the operation with the filtered data.
+            dict: Resultado de la operación con los datos filtrados
         """
         try:
-            # Validate arguments
+            # Validar argumentos
             if not range_str and not table_name:
-                raise ValueError("You must provide 'range_str' or 'table_name'")
-
-            # Open the file
+                raise ValueError("Debe proporcionar 'range_str' o 'table_name'")
+            
+            # Abrir el archivo
             wb = openpyxl.load_workbook(file_path, data_only=True)
-
-            # Verify that the sheet exists
+            
+            # Verificar que la hoja existe
             if sheet_name not in wb.sheetnames:
-                raise SheetNotFoundError(f"Sheet '{sheet_name}' does not exist in the file")
+                raise SheetNotFoundError(f"La hoja '{sheet_name}' no existe en el archivo")
             
             ws = wb[sheet_name]
             
-            # If table_name is provided, get its range
+            # Si se proporciona table_name, obtener su rango
             if table_name:
                 if not hasattr(ws, 'tables') or table_name not in ws.tables:
-                    raise TableNotFoundError(f"Table '{table_name}' does not exist on sheet '{sheet_name}'")
+                    raise TableNotFoundError(f"La tabla '{table_name}' no existe en la hoja '{sheet_name}'")
                 
                 range_str = ws.tables[table_name].ref
             
-            # Filter the data
+            # Filtrar los datos
             filtered_data = filter_sheet_data(wb, sheet_name, range_str, filters)
             
             return {
                 "success": True,
                 "file_path": file_path,
                 "sheet_name": sheet_name,
-                "source": f"Table '{table_name}'" if table_name else f"Range {range_str}",
+                "source": f"Tabla '{table_name}'" if table_name else f"Rango {range_str}",
                 "filtered_data": filtered_data,
                 "record_count": len(filtered_data),
-                "message": f"Found {len(filtered_data)} records that meet the criteria"
+                "message": f"Se encontraron {len(filtered_data)} registros que cumplen los criterios"
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error filtering data: {e}"
+                "message": f"Error al filtrar datos: {e}"
             }
 
-    @mcp.tool(description="Export a workbook to PDF only if it has a single visible sheet")
+    @mcp.tool(description="Exporta un libro a PDF solo si tiene una única hoja visible")
     def export_single_sheet_pdf_tool(excel_file, output_pdf=None):
-        """Export an Excel file to PDF only if it has a single visible sheet."""
+        """Exporta un archivo Excel a PDF si solo tiene una hoja visible."""
         return export_single_visible_sheet_pdf(excel_file, output_pdf)
 
-    @mcp.tool(description="Export one or more sheets to PDF")
+    @mcp.tool(description="Exporta una o varias hojas a PDF")
     def export_sheets_pdf_tool(excel_file, sheets=None, output_dir=None, single_file=False):
-        """Export the specified sheets of an Excel workbook to PDF.
+        """Exporta las hojas indicadas de un libro Excel a PDF.
 
-        ``sheets`` may be a sheet name or a list of names. If ``None`` every existing
-        sheet is exported individually. If ``single_file`` is ``True`` and several
-        sheets are specified, the function attempts to create a single PDF with all of them.
+        ``sheets`` puede ser un nombre de hoja o una lista. Si es ``None`` se
+        exportará cada hoja existente de forma individual. Si ``single_file`` es
+        ``True`` y se especifican varias hojas, se intentará generar un único
+        PDF con todas ellas.
         """
         return export_sheets_to_pdf(excel_file, sheets, output_dir, single_file)
 
 if __name__ == "__main__":
-    logger.info("Master Excel MCP - Usage example")
-    logger.info("This module brings together all Excel functionalities in one place.")
+    logger.info("Master Excel MCP - Ejemplo de uso")
+    logger.info("Este módulo unifica todas las funcionalidades Excel en un solo lugar.")
