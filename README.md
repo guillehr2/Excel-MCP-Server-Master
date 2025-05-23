@@ -90,7 +90,7 @@ Add to your MCP client configuration (e.g., Claude Desktop):
       "command": "npx",
       "args": [
         "-y",
-        "@guillehr2/excel-mcp-server@1.0.3"
+        "@guillehr2/excel-mcp-server@1.0.7"
       ]
     }
   }
