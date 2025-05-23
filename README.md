@@ -1,4 +1,4 @@
-# Excel MCP Master Server 📊
+# Excel MCP Server - Model Context Protocol for Excel without Microsoft Excel
 
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
 [![npm version](https://img.shields.io/npm/v/@guillehr2/excel-mcp-server.svg)](https://www.npmjs.com/package/@guillehr2/excel-mcp-server)
@@ -8,20 +8,29 @@
 [![GitHub Stars](https://img.shields.io/github/stars/guillehr2/Excel-MCP-Server-Master.svg)](https://github.com/guillehr2/Excel-MCP-Server-Master/stargazers)
 [![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://claude.ai)
 
-A unified and comprehensive Model Context Protocol (MCP) server for complete Excel file manipulation. This single server provides all the functionality needed for reading, writing, formatting, and analyzing Excel files through LLM interactions.
+A Model Context Protocol (MCP) server that lets you manipulate Excel files without needing Microsoft Excel installed. Create, read, write, and analyze Excel workbooks (.xlsx, .xlsm) with AI assistants like Claude. Complete Excel automation through LLM integration.
+
+**Key Features:**
+- ✅ Read and write Excel files without Microsoft Excel
+- ✅ Full support for XLSX, XLSM, XLTX, XLTM formats
+- ✅ Create charts, pivot tables, and dashboards
+- ✅ Import/export CSV, JSON, SQL, PDF
+- ✅ Works with Claude AI and other LLM assistants
+- ✅ Cross-platform: Windows, macOS, Linux
+- ✅ Easy installation via npm/npx
 
 ![Excel MCP Master](./assets/banner.svg)
 
-## 🌟 Features
+## 🌟 Features - Excel MCP Server
 
-### Unified Architecture
-- **🎯 Single Server**: All functionality in one place - `master_excel_mcp.py`
-- **📖 Complete Reading**: Data extraction, exploration, and analysis
-- **✍️ Advanced Writing**: Professional formatting and styling
-- **📋 Workbook Management**: Full lifecycle operations
-- **📈 Rich Visualizations**: Charts, tables, pivot tables, and dashboards
-- **🔄 Automation**: Templates, imports, exports, and batch operations
-- **🎨 Professional Output**: Auto-formatting and styling for publication-ready documents
+### Complete Excel Manipulation without Microsoft Excel
+- **📊 Excel file operations**: Read and write XLSX, XLSM, XLTX, XLTM files
+- **📖 Data extraction**: Read data from Excel sheets with pagination support
+- **✍️ Write operations**: Write data and formulas to Excel workbooks
+- **📋 Sheet management**: Create, delete, rename, and copy worksheets
+- **📈 Charts and visualizations**: Create charts, pivot tables, and dashboards
+- **🔄 Data import/export**: Import from CSV, JSON, SQL and export to multiple formats
+- **🎨 Professional formatting**: Automatic styling and formatting for Excel documents
 
 ### Key Capabilities
 
@@ -45,7 +54,7 @@ A unified and comprehensive Model Context Protocol (MCP) server for complete Exc
 - Pivot tables and advanced calculations
 - Batch processing and automation
 
-## 🚀 Quick Start
+## 🚀 Quick Start - Excel MCP Server Installation
 
 ### Installation
 
@@ -124,39 +133,31 @@ If you're developing or want to run from source:
 }
 ```
 
-## 🛠️ Available Tools
+## 🛠️ Excel MCP Server Tools - Complete Excel Automation
 
-### 📁 Workbook Management
-- `create_workbook_tool` - Create new Excel files
-- `open_workbook_tool` - Open existing files
-- `save_workbook_tool` - Save workbooks
-- `list_sheets_tool` - List all worksheets
-- `add_sheet_tool` - Add new worksheets
-- `delete_sheet_tool` - Remove worksheets
-- `rename_sheet_tool` - Rename worksheets
+### Excel File Operations without Microsoft Excel
+- **Create Excel workbooks** - `create_workbook_tool`
+- **Open Excel files** - `open_workbook_tool` (XLSX, XLSM, XLTX, XLTM)
+- **Save Excel files** - `save_workbook_tool`
+- **List Excel sheets** - `list_sheets_tool`
+- **Manage worksheets** - `add_sheet_tool`, `delete_sheet_tool`, `rename_sheet_tool`
 
-### ✍️ Data Operations
-- `write_sheet_data_tool` - Write data arrays
-- `update_cell_tool` - Update individual cells
-- `create_sheet_with_data_tool` - Create sheet with data in one step
+### Excel Data Manipulation
+- **Write to Excel** - `write_sheet_data_tool`, `update_cell_tool`
+- **Read from Excel** - Built-in data extraction with pagination
+- **Excel tables** - `add_table_tool`, `create_formatted_table_tool`
+- **Excel formulas** - Full formula support in all write operations
 
-### 📊 Tables and Formatting
-- `add_table_tool` - Create professional Excel tables
-- `create_formatted_table_tool` - Create and format tables in one step
+### Excel Charts and Analysis
+- **Create Excel charts** - `add_chart_tool` (column, bar, line, pie, scatter)
+- **Excel dashboards** - `create_dashboard_tool`
+- **Pivot tables** - Advanced data analysis
+- **Data filtering** - `filter_data_tool`
 
-### 📈 Charts and Visualizations
-- `add_chart_tool` - Create various chart types
-- `create_chart_from_data_tool` - Generate charts from new data
-
-### 🏗️ Advanced Features
-- `create_dashboard_tool` - Build dynamic dashboards
-- `create_report_from_template_tool` - Template-based reports
-- `update_report_tool` - Update existing reports
-- `import_data_tool` - Import from multiple sources
-- `export_data_tool` - Export to various formats
-- `filter_data_tool` - Filter and analyze data
-- `export_single_sheet_pdf_tool` - Export single sheet to PDF
-- `export_sheets_pdf_tool` - Export multiple sheets to PDF
+### Import/Export Excel Data
+- **Import to Excel** - `import_data_tool` (CSV, JSON, SQL)
+- **Export from Excel** - `export_data_tool` (CSV, JSON, PDF)
+- **PDF export** - `export_single_sheet_pdf_tool`, `export_sheets_pdf_tool`
 
 ## 💡 Usage Examples
 
@@ -377,8 +378,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for the MCP ecosystem**
 
-*If you find this project useful, please consider giving it a ⭐ on GitHub!
+*If you find this Excel MCP Server useful, please consider giving it a ⭐ on GitHub!*
 
 ---
 
-**Created by Guillem Hermida** | [GitHub](https://github.com/guillehr2) | Contact: qtmsuite@gmail.com*
+**Excel MCP Server** by Guillem Hermida | [GitHub](https://github.com/guillehr2) | [NPM](https://www.npmjs.com/package/@guillehr2/excel-mcp-server) | Contact: qtmsuite@gmail.com
+
+*Excel manipulation without Microsoft Excel - Model Context Protocol server for Claude AI and LLM integration*

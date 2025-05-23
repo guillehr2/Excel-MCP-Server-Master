@@ -1,7 +1,7 @@
 {
   "name": "@guillehr2/excel-mcp-server",
   "version": "1.0.7",
-  "description": "A comprehensive Model Context Protocol (MCP) server for Excel file manipulation with AI/LLM integration",
+  "description": "Excel MCP Server - Manipulate Excel files without Microsoft Excel. Model Context Protocol server for reading, writing XLSX XLSM files with Claude AI LLM integration",
   "main": "index.js",
   "bin": {
     "excel-mcp-server": "./index.js"
@@ -14,12 +14,21 @@
     "mcp",
     "model-context-protocol",
     "excel",
+    "excel-mcp-server",
+    "xlsx",
+    "xlsm",
+    "excel-manipulation",
+    "excel-automation",
     "openpyxl",
     "ai",
     "llm",
     "claude",
+    "claude-ai",
     "automation",
-    "spreadsheet"
+    "spreadsheet",
+    "excel-without-microsoft",
+    "mcp-server",
+    "anthropic"
   ],
   "author": "Guillem Hermida",
   "license": "MIT",
