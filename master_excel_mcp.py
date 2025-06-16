@@ -80,7 +80,7 @@ try:
         Reference, Series
     )
     from openpyxl.worksheet.filters import AutoFilter
-    from openpyxl.pivot.table import PivotTable, PivotField
+    from openpyxl.pivot.table import TableDefinition as PivotTable, PivotField
     from openpyxl.pivot.cache import PivotCache
     HAS_OPENPYXL = True
 except ImportError as e:
