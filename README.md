@@ -375,6 +375,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Excel manipulation powered by [openpyxl](https://openpyxl.readthedocs.io/)
 - Data processing with [pandas](https://pandas.pydata.org/)
 - Published on [npm](https://www.npmjs.com/) for easy distribution
+- **Special thanks to [lwsinclair](https://github.com/lwsinclair)** for the independent security audit and MseeP.ai integration
 
 ## 📊 Stats
 
