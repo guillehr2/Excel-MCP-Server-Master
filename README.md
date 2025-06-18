@@ -63,6 +63,8 @@ A Model Context Protocol (MCP) server that lets you manipulate Excel files witho
 
 This project has been independently audited by [MseeP.ai](https://mseep.ai/app/guillehr2-excel-mcp-server-master), providing ongoing security validation and trust assessment for the MCP ecosystem.
 
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/d608b999-01ad-40b1-aea1-3c6c6e7bb4f1)
+
 ## 🚀 Quick Start - Excel MCP Server Installation
 
 ### Installation
