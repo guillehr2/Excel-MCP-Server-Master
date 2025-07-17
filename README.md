@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/guillehr2-excel-mcp-server-master-badge.png)](https://mseep.ai/app/guillehr2-excel-mcp-server-master)
+
 # Excel MCP Server - Model Context Protocol for Excel without Microsoft Excel
 
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
